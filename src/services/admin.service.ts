@@ -1,8 +1,32 @@
-// DEPRECATED: This service used Wallet table which has been removed
-// Use direct User.balance operations instead via API routes:
-// - POST /api/admin/users/[id]/balance - to adjust balance
-// - POST /api/admin/sync-balance - to sync old wallet data
+import { prisma } from '@/lib/prisma'
 
 export class AdminService {
-    // This service is deprecated - use API routes instead
+    static async getAuditLogs(skip: number = 0, take: number = 50) {
+        const [logs, total] = await Promise.all([
+            prisma.adminAuditLog.findMany({
+                skip,
+                take,
+                include: {
+                    admin: {
+                        select: {
+                            username: true,
+                            email: true,
+                        },
+                    },
+                    targetUser: {
+                        select: {
+                            username: true,
+                            email: true,
+                        },
+                    },
+                },
+                orderBy: {
+                    createdAt: 'desc',
+                },
+            }),
+            prisma.adminAuditLog.count(),
+        ])
+
+        return { logs, total }
+    }
 }
