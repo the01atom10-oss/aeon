@@ -31,7 +31,7 @@ export default function TaskRunPage() {
 
             if (data.success) {
                 alert(`Hoàn thành! Bạn đã nhận ${formatCurrency(data.data.rewardAmount)} Credits`)
-                router.push('/app/wallet')
+                router.push('/app/account')
             } else {
                 alert(data.message || 'Không thể hoàn thành nhiệm vụ')
                 setSubmitting(false)

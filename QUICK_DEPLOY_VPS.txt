@@ -1,0 +1,211 @@
+═══════════════════════════════════════════════════════
+   HƯỚNG DẪN NHANH DEPLOY LÊN VPS
+═══════════════════════════════════════════════════════
+
+THÔNG TIN VPS:
+- Domain: 9caratonline.com
+- IP: 72.62.120.215
+- SSH: ssh root@72.62.120.215
+- Database Password: 9Carat@online.
+
+═══════════════════════════════════════════════════════
+BƯỚC 1: KẾT NỐI VPS
+═══════════════════════════════════════════════════════
+
+Từ máy Windows (PowerShell):
+ssh root@72.62.120.215
+
+═══════════════════════════════════════════════════════
+BƯỚC 2: CÀI ĐẶT DOCKER & NODE.JS
+═══════════════════════════════════════════════════════
+
+# Update system
+apt update && apt upgrade -y
+
+# Cài Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh get-docker.sh
+
+# Cài Docker Compose
+curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+
+# Cài Node.js 18
+curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+apt-get install -y nodejs
+
+# Cài PM2
+npm install -g pm2
+
+═══════════════════════════════════════════════════════
+BƯỚC 3: UPLOAD PROJECT
+═══════════════════════════════════════════════════════
+
+Từ máy Windows (PowerShell):
+scp -r C:\Users\hng\Documents\aeon root@72.62.120.215:/root/
+
+Hoặc dùng FileZilla/WinSCP upload vào /root/aeon
+
+═══════════════════════════════════════════════════════
+BƯỚC 4: SETUP TRÊN VPS
+═══════════════════════════════════════════════════════
+
+cd /root/aeon
+
+# Khởi động database
+docker-compose -f docker-compose.vps.yml up -d
+
+# Đợi 15 giây
+sleep 15
+
+# Cài dependencies
+npm install
+
+# Tạo .env.local
+nano .env.local
+
+# Copy nội dung sau vào .env.local:
+───────────────────────────────────────────────────────
+DATABASE_URL="postgresql://postgres:9Carat@online.@localhost:5432/carat9_reward?schema=public"
+
+NEXTAUTH_SECRET="$(openssl rand -base64 32)"
+NEXTAUTH_URL="https://9caratonline.com"
+
+NEXT_PUBLIC_APP_URL="https://9caratonline.com"
+
+NODE_ENV=production
+───────────────────────────────────────────────────────
+
+# Generate Prisma
+npx prisma generate
+
+# Tạo database schema
+npx prisma db push --accept-data-loss
+
+# Seed dữ liệu
+npx tsx prisma/seed-vip-levels.ts
+npx tsx prisma/seed-tasks.ts
+npx tsx prisma/seed-users.ts
+
+# Build app
+npm run build
+
+# Chạy với PM2
+pm2 start npm --name "9carat" -- start
+
+# Auto start khi reboot
+pm2 startup
+pm2 save
+
+═══════════════════════════════════════════════════════
+BƯỚC 5: CẤU HÌNH NGINX & SSL
+═══════════════════════════════════════════════════════
+
+# Cài Nginx
+apt install nginx -y
+
+# Tạo config
+nano /etc/nginx/sites-available/9carat
+
+# Copy nội dung:
+───────────────────────────────────────────────────────
+server {
+    listen 80;
+    server_name 9caratonline.com www.9caratonline.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+───────────────────────────────────────────────────────
+
+# Kích hoạt
+ln -s /etc/nginx/sites-available/9carat /etc/nginx/sites-enabled/
+nginx -t
+systemctl reload nginx
+
+# Cài SSL
+apt install certbot python3-certbot-nginx -y
+certbot --nginx -d 9caratonline.com -d www.9caratonline.com
+
+═══════════════════════════════════════════════════════
+BƯỚC 6: CẤU HÌNH FIREWALL
+═══════════════════════════════════════════════════════
+
+apt install ufw -y
+ufw allow 22/tcp
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw enable
+
+═══════════════════════════════════════════════════════
+TRUY CẬP
+═══════════════════════════════════════════════════════
+
+✅ App: https://9caratonline.com
+✅ Admin: https://9caratonline.com/admin
+✅ Adminer: http://72.62.120.215:8080 (hoặc SSH tunnel)
+
+═══════════════════════════════════════════════════════
+TRUY CẬP ADMINER (QUẢN TRỊ DATABASE)
+═══════════════════════════════════════════════════════
+
+Cách 1: SSH Tunnel (An toàn - Khuyến nghị)
+───────────────────────────────────────────────────────
+Từ máy Windows:
+ssh -L 8080:localhost:8080 root@72.62.120.215
+
+Sau đó mở: http://localhost:8080
+
+Cách 2: Truy cập trực tiếp
+───────────────────────────────────────────────────────
+Mở: http://72.62.120.215:8080
+
+Đăng nhập:
+- System: PostgreSQL
+- Server: db
+- Username: postgres
+- Password: 9Carat@online.
+- Database: carat9_reward
+
+═══════════════════════════════════════════════════════
+TÀI KHOẢN MẶC ĐỊNH
+═══════════════════════════════════════════════════════
+
+Admin:
+- Username: admin
+- Password: Admin@123
+
+User:
+- Username: demo
+- Password: Demo@123
+
+⚠️ ĐỔI MẬT KHẨU NGAY SAU KHI DEPLOY!
+
+═══════════════════════════════════════════════════════
+QUẢN LÝ APP
+═══════════════════════════════════════════════════════
+
+# Xem logs
+pm2 logs 9carat
+
+# Restart
+pm2 restart 9carat
+
+# Stop
+pm2 stop 9carat
+
+# Xem status
+pm2 status
+
+═══════════════════════════════════════════════════════
+
+

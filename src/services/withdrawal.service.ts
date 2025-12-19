@@ -14,10 +14,9 @@ export interface CreateWithdrawalRequest {
 
 export class WithdrawalService {
     static async createWithdrawalRequest(input: CreateWithdrawalRequest) {
-        // Verify user and wallet
+        // Verify user
         const user = await prisma.user.findUnique({
             where: { id: input.userId },
-            include: { wallet: true },
         })
 
         if (!user) {
@@ -32,10 +31,6 @@ export class WithdrawalService {
         const isPinValid = await bcrypt.compare(input.withdrawalPin, user.withdrawalPinHash)
         if (!isPinValid) {
             throw new Error('Mã rút vốn không chính xác')
-        }
-
-        if (!user.wallet) {
-            throw new Error('Wallet not found')
         }
 
         // Check balance
@@ -116,7 +111,7 @@ export class WithdrawalService {
     static async approveWithdrawal(id: string, adminId: string, adminNote?: string) {
         const withdrawal = await prisma.withdrawalRequest.findUnique({
             where: { id },
-            include: { user: { include: { wallet: true } } },
+            include: { user: true },
         })
 
         if (!withdrawal) {
@@ -125,10 +120,6 @@ export class WithdrawalService {
 
         if (withdrawal.status !== WithdrawalStatus.PENDING) {
             throw new Error('Withdrawal request already processed')
-        }
-
-        if (!withdrawal.user.wallet) {
-            throw new Error('User wallet not found')
         }
 
         // Check balance again
@@ -150,12 +141,12 @@ export class WithdrawalService {
                 },
             })
 
-            // Update wallet balance
-            const balanceBefore = withdrawal.user.wallet!.balance
-            const balanceAfter = balanceBefore.sub(withdrawal.amount)
+            // Update user balance
+            const balanceBefore = Number(withdrawal.user.balance)
+            const balanceAfter = balanceBefore - withdrawal.amount
 
-            await tx.wallet.update({
-                where: { userId: withdrawal.userId },
+            await tx.user.update({
+                where: { id: withdrawal.userId },
                 data: { balance: balanceAfter },
             })
 

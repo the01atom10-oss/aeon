@@ -113,12 +113,6 @@ export default async function SupportPage() {
                     </div>
                 </Link>
 
-                <Link href="/app/wallet">
-                    <div className="bg-green-500/20 backdrop-blur-sm rounded-xl p-4 border border-green-400/30 hover:bg-green-500/30 transition-all text-center">
-                        <div className="text-3xl mb-2">💰</div>
-                        <p className="font-semibold">Ví của tôi</p>
-                    </div>
-                </Link>
                 
                 <Link href="/app/account/mission">
                     <div className="bg-pink-500/20 backdrop-blur-sm rounded-xl p-4 border border-pink-400/30 hover:bg-pink-500/30 transition-all text-center">

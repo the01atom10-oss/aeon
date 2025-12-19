@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { WalletService } from '@/services/wallet.service'
+import { prisma } from '@/lib/prisma'
 import { formatCurrency } from '@/lib/utils'
 import Link from 'next/link'
 import { LogoutButton } from '@/components/LogoutButton'
@@ -13,8 +13,20 @@ export default async function MyAccountPage() {
         redirect('/login')
     }
 
-    const balance = await WalletService.getBalance(session.user.id)
-    const vipLevel = await WalletService.getUserVipLevel(session.user.id)
+    const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { balance: true }
+    })
+
+    const balance = user?.balance ? Number(user.balance) : 0
+
+    const vipLevel = await prisma.vipLevel.findFirst({
+        where: {
+            minBalance: { lte: balance },
+            isActive: true
+        },
+        orderBy: { minBalance: 'desc' }
+    })
 
     return (
         <div className="min-h-screen text-white px-4 py-6 space-y-6">

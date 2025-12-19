@@ -82,7 +82,7 @@ export class DepositService {
     static async approveDeposit(id: string, adminId: string, adminNote?: string) {
         const deposit = await prisma.depositRequest.findUnique({
             where: { id },
-            include: { user: { include: { wallet: true } } },
+            include: { user: true },
         })
 
         if (!deposit) {
@@ -91,10 +91,6 @@ export class DepositService {
 
         if (deposit.status !== DepositStatus.PENDING) {
             throw new Error('Deposit request already processed')
-        }
-
-        if (!deposit.user.wallet) {
-            throw new Error('User wallet not found')
         }
 
         // Use transaction to update both deposit and wallet
@@ -110,12 +106,12 @@ export class DepositService {
                 },
             })
 
-            // Update wallet balance
-            const balanceBefore = deposit.user.wallet!.balance
-            const balanceAfter = balanceBefore.add(deposit.amount)
+            // Update user balance
+            const balanceBefore = Number(deposit.user.balance)
+            const balanceAfter = balanceBefore + deposit.amount
 
-            await tx.wallet.update({
-                where: { userId: deposit.userId },
+            await tx.user.update({
+                where: { id: deposit.userId },
                 data: { balance: balanceAfter },
             })
 

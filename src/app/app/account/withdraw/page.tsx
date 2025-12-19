@@ -24,7 +24,7 @@ export default function WithdrawPage() {
 
     const fetchBalance = async () => {
         try {
-            const res = await fetch('/api/wallet')
+            const res = await fetch('/api/balance')
             const data = await res.json()
             if (data.success) {
                 setBalance(data.data.balance)

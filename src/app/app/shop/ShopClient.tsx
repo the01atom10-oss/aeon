@@ -42,7 +42,7 @@ export default function ShopClient() {
 
     const loadBalance = async () => {
         try {
-            const response = await fetch('/api/wallet')
+            const response = await fetch('/api/balance')
             if (response.ok) {
                 const data = await response.json()
                 setBalance(data.balance || 0)

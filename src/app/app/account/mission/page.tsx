@@ -82,7 +82,7 @@ export default function MissionPage() {
 
     const fetchUserData = async () => {
         try {
-            const res = await fetch('/api/wallet')
+            const res = await fetch('/api/balance')
             const data = await res.json()
             if (data.success) {
                 setUserData(data.data)

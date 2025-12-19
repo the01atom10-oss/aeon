@@ -40,7 +40,7 @@ export default function MissionHistoryPage() {
 
     const fetchBalance = async () => {
         try {
-            const res = await fetch('/api/wallet')
+            const res = await fetch('/api/balance')
             if (res.ok) {
                 const data = await res.json()
                 setBalance(data.balance || 0)

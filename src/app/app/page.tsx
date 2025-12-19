@@ -171,17 +171,6 @@ export default async function AppDashboard() {
                     </Card>
                 </Link>
 
-                <Link href="/app/wallet">
-                    <Card className="hover:shadow-lg transition-all cursor-pointer active:scale-95 h-full">
-                        <CardContent className="text-center py-4 sm:py-5 md:py-6">
-                            <div className="text-3xl sm:text-4xl mb-1 sm:mb-2">💰</div>
-                            <h3 className="font-semibold text-sm sm:text-base">Ví của tôi</h3>
-                            <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1 hidden sm:block">
-                                Xem lịch sử giao dịch
-                            </p>
-                        </CardContent>
-                    </Card>
-                </Link>
 
                 <Link href="/app/chat">
                     <Card className="hover:shadow-lg transition-all cursor-pointer bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 active:scale-95 h-full">

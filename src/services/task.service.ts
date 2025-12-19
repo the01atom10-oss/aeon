@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
-import { WalletService } from './wallet.service'
 import { TaskRunState, TransactionType } from '@prisma/client'
 import { nanoid } from 'nanoid'
+import Decimal from 'decimal.js'
 
 export class TaskService {
     /**
@@ -20,11 +20,27 @@ export class TaskService {
             throw new Error('Task not found or inactive')
         }
 
-        // Check user's VIP level
-        const userVipLevel = await WalletService.getUserVipLevel(userId)
+        // Check user's VIP level based on balance
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { balance: true }
+        })
+
+        if (!user) {
+            throw new Error('User not found')
+        }
+
+        const userBalance = Number(user.balance)
+        const userVipLevel = await prisma.vipLevel.findFirst({
+            where: {
+                minBalance: { lte: userBalance },
+                isActive: true
+            },
+            orderBy: { minBalance: 'desc' }
+        })
 
         // User must meet minimum VIP level requirement
-        if (!userVipLevel || userVipLevel.minBalance.lessThan(task.vipLevel.minBalance)) {
+        if (!userVipLevel || new Decimal(userVipLevel.minBalance).greaterThan(task.vipLevel.minBalance)) {
             throw new Error('Insufficient VIP level for this task')
         }
 
@@ -112,13 +128,39 @@ export class TaskService {
         const txIdempotencyKey = `task-reward-${taskRunId}`
 
         // Credit reward to user
-        await WalletService.credit({
-            userId,
-            type: TransactionType.REWARD,
-            amount: taskRun.rewardAmount,
-            description: `Task reward: ${taskRun.task.name}`,
-            idempotencyKey: txIdempotencyKey,
-            referenceId: taskRunId,
+        await prisma.$transaction(async (tx) => {
+            const currentUser = await tx.user.findUnique({
+                where: { id: userId },
+                select: { balance: true }
+            })
+
+            if (!currentUser) {
+                throw new Error('User not found')
+            }
+
+            const balanceBefore = Number(currentUser.balance)
+            const balanceAfter = balanceBefore + Number(taskRun.rewardAmount)
+
+            // Update user balance
+            await tx.user.update({
+                where: { id: userId },
+                data: { balance: balanceAfter }
+            })
+
+            // Create transaction record
+            await tx.transaction.create({
+                data: {
+                    userId,
+                    type: TransactionType.REWARD,
+                    amount: Number(taskRun.rewardAmount),
+                    description: `Task reward: ${taskRun.task.name}`,
+                    balanceBefore,
+                    balanceAfter,
+                    idempotencyKey: txIdempotencyKey,
+                    referenceId: taskRunId,
+                    status: 'POSTED'
+                }
+            })
         })
 
         // Mark task as completed

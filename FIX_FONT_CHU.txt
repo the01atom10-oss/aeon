@@ -1,0 +1,71 @@
+═══════════════════════════════════════════════════════
+   HƯỚNG DẪN SỬA LỖI FONT CHỮ
+═══════════════════════════════════════════════════════
+
+Vấn đề: Font chữ bị lỗi khi hiển thị dữ liệu từ database
+Nguyên nhân: Database encoding không đúng (không phải UTF-8)
+
+═══════════════════════════════════════════════════════
+CÁCH 1: TẠO LẠI DATABASE VỚI UTF-8 (KHUYẾN NGHỊ)
+═══════════════════════════════════════════════════════
+
+1. Export dữ liệu hiện tại:
+   docker exec 9carat-postgres-dev pg_dump -U postgres carat9_reward --encoding=UTF8 --no-owner --no-acl > backup_before_fix.sql
+
+2. Xóa database cũ:
+   docker exec 9carat-postgres-dev psql -U postgres -c "DROP DATABASE carat9_reward;"
+
+3. Tạo database mới với UTF-8:
+   docker exec 9carat-postgres-dev psql -U postgres -c "CREATE DATABASE carat9_reward WITH ENCODING 'UTF8' LC_COLLATE='en_US.UTF-8' LC_CTYPE='en_US.UTF-8' TEMPLATE template0;"
+
+4. Import lại dữ liệu:
+   type backup_before_fix.sql | docker exec -i 9carat-postgres-dev psql -U postgres carat9_reward
+
+5. Generate Prisma:
+   npx prisma generate
+
+═══════════════════════════════════════════════════════
+CÁCH 2: DÙNG SCRIPT TỰ ĐỘNG
+═══════════════════════════════════════════════════════
+
+Chạy: recreate-db-utf8.bat
+
+Script sẽ tự động:
+- Export dữ liệu
+- Xóa database cũ
+- Tạo database mới với UTF-8
+- Import lại dữ liệu
+
+═══════════════════════════════════════════════════════
+CÁCH 3: KIỂM TRA VÀ SỬA ENCODING
+═══════════════════════════════════════════════════════
+
+1. Kiểm tra encoding hiện tại:
+   docker exec -it 9carat-postgres-dev psql -U postgres -d carat9_reward -c "SHOW server_encoding;"
+
+2. Set client encoding:
+   docker exec -it 9carat-postgres-dev psql -U postgres -d carat9_reward -c "SET client_encoding = 'UTF8';"
+
+═══════════════════════════════════════════════════════
+CÁCH 4: SỬA DỮ LIỆU ĐÃ BỊ LỖI
+═══════════════════════════════════════════════════════
+
+Nếu dữ liệu đã bị lỗi encoding, cần:
+1. Export lại từ database gốc (máy cũ) với encoding UTF-8
+2. Import lại trên máy mới
+
+═══════════════════════════════════════════════════════
+LƯU Ý
+═══════════════════════════════════════════════════════
+
+• Database mới tạo sẽ tự động dùng UTF-8 nếu container
+  được cấu hình đúng (đã cập nhật docker-compose.db-only.yml)
+
+• HTML đã được thêm charset="utf-8" trong layout.tsx
+
+• Sau khi sửa, restart ứng dụng:
+  npm run dev
+
+═══════════════════════════════════════════════════════
+
+

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { WalletService } from '@/services/wallet.service'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(req: NextRequest) {
     try {
@@ -18,11 +18,36 @@ export async function GET(req: NextRequest) {
         const cursor = searchParams.get('cursor') || undefined
         const take = parseInt(searchParams.get('take') || '20')
 
-        const result = await WalletService.getTransactions(
-            session.user.id,
-            cursor,
-            take
-        )
+        const where = { userId: session.user.id }
+        const orderBy = { createdAt: 'desc' as const }
+
+        let transactions
+        if (cursor) {
+            transactions = await prisma.transaction.findMany({
+                where: {
+                    ...where,
+                    id: { lt: cursor }
+                },
+                orderBy,
+                take: take + 1
+            })
+        } else {
+            transactions = await prisma.transaction.findMany({
+                where,
+                orderBy,
+                take: take + 1
+            })
+        }
+
+        const hasMore = transactions.length > take
+        const items = hasMore ? transactions.slice(0, take) : transactions
+        const nextCursor = hasMore ? items[items.length - 1].id : null
+
+        const result = {
+            items,
+            nextCursor,
+            hasMore
+        }
 
         return NextResponse.json({
             success: true,
