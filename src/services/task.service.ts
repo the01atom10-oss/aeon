@@ -1,7 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { TaskRunState, TransactionType } from '@prisma/client'
 import { nanoid } from 'nanoid'
-import Decimal from 'decimal.js'
 
 export class TaskService {
     /**
@@ -40,7 +39,13 @@ export class TaskService {
         })
 
         // User must meet minimum VIP level requirement
-        if (!userVipLevel || new Decimal(userVipLevel.minBalance).greaterThan(task.vipLevel.minBalance)) {
+        if (!userVipLevel) {
+            throw new Error('Insufficient VIP level for this task')
+        }
+        
+        const userVipMinBalance = Number(userVipLevel.minBalance)
+        const taskVipMinBalance = Number(task.vipLevel.minBalance)
+        if (userVipMinBalance < taskVipMinBalance) {
             throw new Error('Insufficient VIP level for this task')
         }
 

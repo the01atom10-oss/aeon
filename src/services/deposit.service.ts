@@ -108,7 +108,7 @@ export class DepositService {
 
             // Update user balance
             const balanceBefore = Number(deposit.user.balance)
-            const balanceAfter = balanceBefore + deposit.amount
+            const balanceAfter = balanceBefore + Number(deposit.amount)
 
             await tx.user.update({
                 where: { id: deposit.userId },

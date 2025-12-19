@@ -29,4 +29,30 @@ export class AdminService {
 
         return { logs, total }
     }
+
+    static async getVipLevels() {
+        return prisma.vipLevel.findMany({
+            orderBy: {
+                sortOrder: 'asc',
+            },
+        })
+    }
+
+    static async createVipLevel(data: {
+        name: string
+        minBalance: number
+        commissionRate: number
+        isActive?: boolean
+        sortOrder?: number
+    }) {
+        return prisma.vipLevel.create({
+            data: {
+                name: data.name,
+                minBalance: data.minBalance,
+                commissionRate: data.commissionRate,
+                isActive: data.isActive ?? true,
+                sortOrder: data.sortOrder ?? 0,
+            },
+        })
+    }
 }

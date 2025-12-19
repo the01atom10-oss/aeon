@@ -124,7 +124,7 @@ export class WithdrawalService {
 
         // Check balance again
         const userBalance = Number(withdrawal.user.balance)
-        if (userBalance < withdrawal.amount) {
+        if (userBalance < Number(withdrawal.amount)) {
             throw new Error('Insufficient balance')
         }
 
@@ -143,7 +143,7 @@ export class WithdrawalService {
 
             // Update user balance
             const balanceBefore = Number(withdrawal.user.balance)
-            const balanceAfter = balanceBefore - withdrawal.amount
+            const balanceAfter = balanceBefore - Number(withdrawal.amount)
 
             await tx.user.update({
                 where: { id: withdrawal.userId },

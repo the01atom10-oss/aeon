@@ -27,7 +27,22 @@ export async function GET(req: NextRequest) {
             select: { balance: true }
         })
 
-        const response = {
+        // Prepare response data
+        const responseData: {
+            success: boolean
+            data: Array<{
+                id: string
+                name: string
+                description: string | null
+                basePrice: string
+                rewardRate: string
+                vipLevel: {
+                    name: string
+                    minBalance: string
+                }
+            }>
+            message?: string
+        } = {
             success: true,
             data: tasks.map((task) => ({
                 id: task.id,
@@ -51,14 +66,14 @@ export async function GET(req: NextRequest) {
             })
             
             if (allTasks.length === 0) {
-                response.message = 'Chưa có nhiệm vụ nào trong hệ thống. Vui lòng liên hệ admin.'
+                responseData.message = 'Chưa có nhiệm vụ nào trong hệ thống. Vui lòng liên hệ admin.'
             } else {
                 const minRequired = Math.min(...allTasks.map(t => Number(t.vipLevel.minBalance)))
-                response.message = `Bạn cần nạp tối thiểu $${minRequired.toLocaleString()} để tham gia nhiệm vụ. Số dư hiện tại: $${userBalance.toLocaleString()}`
+                responseData.message = `Bạn cần nạp tối thiểu $${minRequired.toLocaleString()} để tham gia nhiệm vụ. Số dư hiện tại: $${userBalance.toLocaleString()}`
             }
         }
 
-        return NextResponse.json(response)
+        return NextResponse.json(responseData)
     } catch (error) {
         console.error('Tasks error:', error)
         return NextResponse.json(
