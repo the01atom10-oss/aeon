@@ -1,0 +1,170 @@
+SET
+SET
+SET
+SET
+SET
+ set_config 
+------------
+ 
+(1 row)
+
+SET
+SET
+SET
+SET
+COMMENT
+ERROR:  type "DepositStatus" already exists
+ERROR:  type "NotificationStatus" already exists
+ERROR:  type "ProductStatus" already exists
+ERROR:  type "PurchaseStatus" already exists
+ERROR:  type "TaskRunState" already exists
+ERROR:  type "TransactionStatus" already exists
+ERROR:  type "TransactionType" already exists
+ERROR:  type "UserRole" already exists
+ERROR:  type "UserStatus" already exists
+ERROR:  type "WithdrawalStatus" already exists
+SET
+SET
+ERROR:  relation "AdminAuditLog" already exists
+ERROR:  relation "ChatMessage" already exists
+ERROR:  relation "DepositRequest" already exists
+ERROR:  relation "LuckyWheelSpin" already exists
+ERROR:  relation "Notification" already exists
+ERROR:  relation "Product" already exists
+ERROR:  relation "ProductPurchase" already exists
+ERROR:  relation "SystemSettings" already exists
+ERROR:  relation "Task" already exists
+ERROR:  relation "TaskProduct" already exists
+ERROR:  relation "TaskRun" already exists
+ERROR:  relation "Transaction" already exists
+ERROR:  relation "User" already exists
+ERROR:  relation "VipLevel" already exists
+ERROR:  relation "WheelPrize" already exists
+ERROR:  relation "WithdrawalRequest" already exists
+COPY 0
+ERROR:  duplicate key value violates unique constraint "ChatMessage_pkey"
+DETAIL:  Key (id)=(cmjcizic400068hi2nq32bwej) already exists.
+CONTEXT:  COPY ChatMessage, line 1
+COPY 0
+ERROR:  duplicate key value violates unique constraint "LuckyWheelSpin_pkey"
+DETAIL:  Key (id)=(cmjcjqxrk000u8hi26yqfvequ) already exists.
+CONTEXT:  COPY LuckyWheelSpin, line 1
+ERROR:  duplicate key value violates unique constraint "Notification_pkey"
+DETAIL:  Key (id)=(cmjckru7y0001g4a8xdgr44wo) already exists.
+CONTEXT:  COPY Notification, line 1
+COPY 0
+COPY 0
+ERROR:  duplicate key value violates unique constraint "SystemSettings_pkey"
+DETAIL:  Key (id)=(cmjciyp0y00018hi2nveoa137) already exists.
+CONTEXT:  COPY SystemSettings, line 1
+ERROR:  duplicate key value violates unique constraint "Task_pkey"
+DETAIL:  Key (id)=(cmjccypvs00012yga2ohze9wy) already exists.
+CONTEXT:  COPY Task, line 1
+ERROR:  duplicate key value violates unique constraint "TaskProduct_pkey"
+DETAIL:  Key (id)=(cmjccpi6c000511grix68ifwp) already exists.
+CONTEXT:  COPY TaskProduct, line 1
+ERROR:  duplicate key value violates unique constraint "TaskRun_pkey"
+DETAIL:  Key (id)=(cmjcd0wju0001xfhd1yvue85h) already exists.
+CONTEXT:  COPY TaskRun, line 1
+ERROR:  duplicate key value violates unique constraint "Transaction_pkey"
+DETAIL:  Key (id)=(cmjcco8m5000411gr40sfkuw3) already exists.
+CONTEXT:  COPY Transaction, line 1
+ERROR:  duplicate key value violates unique constraint "User_pkey"
+DETAIL:  Key (id)=(cmjccnuf4000111grqchnlj30) already exists.
+CONTEXT:  COPY User, line 1
+ERROR:  duplicate key value violates unique constraint "VipLevel_pkey"
+DETAIL:  Key (id)=(cmjccykx00000ux222rstuutx) already exists.
+CONTEXT:  COPY VipLevel, line 1
+ERROR:  duplicate key value violates unique constraint "WheelPrize_pkey"
+DETAIL:  Key (id)=(cmjck4jpl000096hu1ia68i50) already exists.
+CONTEXT:  COPY WheelPrize, line 1
+COPY 0
+ERROR:  multiple primary keys for table "AdminAuditLog" are not allowed
+ERROR:  multiple primary keys for table "ChatMessage" are not allowed
+ERROR:  multiple primary keys for table "DepositRequest" are not allowed
+ERROR:  multiple primary keys for table "LuckyWheelSpin" are not allowed
+ERROR:  multiple primary keys for table "Notification" are not allowed
+ERROR:  multiple primary keys for table "ProductPurchase" are not allowed
+ERROR:  multiple primary keys for table "Product" are not allowed
+ERROR:  multiple primary keys for table "SystemSettings" are not allowed
+ERROR:  multiple primary keys for table "TaskProduct" are not allowed
+ERROR:  multiple primary keys for table "TaskRun" are not allowed
+ERROR:  multiple primary keys for table "Task" are not allowed
+ERROR:  multiple primary keys for table "Transaction" are not allowed
+ERROR:  multiple primary keys for table "User" are not allowed
+ERROR:  multiple primary keys for table "VipLevel" are not allowed
+ERROR:  multiple primary keys for table "WheelPrize" are not allowed
+ERROR:  multiple primary keys for table "WithdrawalRequest" are not allowed
+ERROR:  relation "AdminAuditLog_adminId_idx" already exists
+ERROR:  relation "AdminAuditLog_createdAt_idx" already exists
+ERROR:  relation "AdminAuditLog_targetUserId_idx" already exists
+ERROR:  relation "ChatMessage_createdAt_idx" already exists
+ERROR:  relation "ChatMessage_userId_idx" already exists
+ERROR:  relation "DepositRequest_createdAt_idx" already exists
+ERROR:  relation "DepositRequest_status_idx" already exists
+ERROR:  relation "DepositRequest_userId_idx" already exists
+ERROR:  relation "LuckyWheelSpin_createdAt_idx" already exists
+ERROR:  relation "LuckyWheelSpin_shippingStatus_idx" already exists
+ERROR:  relation "LuckyWheelSpin_userId_idx" already exists
+ERROR:  relation "LuckyWheelSpin_wheelPrizeId_idx" already exists
+ERROR:  relation "Notification_createdAt_idx" already exists
+ERROR:  relation "Notification_status_idx" already exists
+ERROR:  relation "Notification_userId_idx" already exists
+ERROR:  relation "ProductPurchase_createdAt_idx" already exists
+ERROR:  relation "ProductPurchase_productId_idx" already exists
+ERROR:  relation "ProductPurchase_status_idx" already exists
+ERROR:  relation "ProductPurchase_userId_idx" already exists
+ERROR:  relation "Product_createdAt_idx" already exists
+ERROR:  relation "Product_sortOrder_idx" already exists
+ERROR:  relation "Product_status_idx" already exists
+ERROR:  relation "SystemSettings_key_idx" already exists
+ERROR:  relation "SystemSettings_key_key" already exists
+ERROR:  relation "TaskProduct_isActive_idx" already exists
+ERROR:  relation "TaskProduct_sortOrder_idx" already exists
+ERROR:  relation "TaskProduct_vipLevelId_idx" already exists
+ERROR:  relation "TaskRun_idempotencyKey_key" already exists
+ERROR:  relation "TaskRun_state_idx" already exists
+ERROR:  relation "TaskRun_taskId_idx" already exists
+ERROR:  relation "TaskRun_taskProductId_idx" already exists
+ERROR:  relation "TaskRun_userId_createdAt_idx" already exists
+ERROR:  relation "Task_isActive_idx" already exists
+ERROR:  relation "Task_vipLevelId_idx" already exists
+ERROR:  relation "Transaction_createdAt_idx" already exists
+ERROR:  relation "Transaction_idempotencyKey_key" already exists
+ERROR:  relation "Transaction_referenceId_idx" already exists
+ERROR:  relation "Transaction_status_idx" already exists
+ERROR:  relation "Transaction_type_idx" already exists
+ERROR:  relation "Transaction_userId_createdAt_idx" already exists
+ERROR:  relation "User_createdAt_idx" already exists
+ERROR:  relation "User_email_idx" already exists
+ERROR:  relation "User_email_key" already exists
+ERROR:  relation "User_inviteCode_idx" already exists
+ERROR:  relation "User_inviteCode_key" already exists
+ERROR:  relation "User_phone_idx" already exists
+ERROR:  relation "User_phone_key" already exists
+ERROR:  relation "User_username_idx" already exists
+ERROR:  relation "User_username_key" already exists
+ERROR:  relation "VipLevel_minBalance_idx" already exists
+ERROR:  relation "VipLevel_name_key" already exists
+ERROR:  relation "VipLevel_sortOrder_idx" already exists
+ERROR:  relation "WheelPrize_isActive_idx" already exists
+ERROR:  relation "WheelPrize_sortOrder_idx" already exists
+ERROR:  relation "WithdrawalRequest_createdAt_idx" already exists
+ERROR:  relation "WithdrawalRequest_status_idx" already exists
+ERROR:  relation "WithdrawalRequest_userId_idx" already exists
+ERROR:  constraint "AdminAuditLog_adminId_fkey" for relation "AdminAuditLog" already exists
+ERROR:  constraint "AdminAuditLog_targetUserId_fkey" for relation "AdminAuditLog" already exists
+ERROR:  constraint "ChatMessage_userId_fkey" for relation "ChatMessage" already exists
+ERROR:  constraint "DepositRequest_userId_fkey" for relation "DepositRequest" already exists
+ERROR:  constraint "LuckyWheelSpin_userId_fkey" for relation "LuckyWheelSpin" already exists
+ERROR:  constraint "LuckyWheelSpin_wheelPrizeId_fkey" for relation "LuckyWheelSpin" already exists
+ERROR:  constraint "Notification_userId_fkey" for relation "Notification" already exists
+ERROR:  constraint "ProductPurchase_productId_fkey" for relation "ProductPurchase" already exists
+ERROR:  constraint "ProductPurchase_userId_fkey" for relation "ProductPurchase" already exists
+ERROR:  constraint "TaskProduct_vipLevelId_fkey" for relation "TaskProduct" already exists
+ERROR:  constraint "TaskRun_taskId_fkey" for relation "TaskRun" already exists
+ERROR:  constraint "TaskRun_taskProductId_fkey" for relation "TaskRun" already exists
+ERROR:  constraint "TaskRun_userId_fkey" for relation "TaskRun" already exists
+ERROR:  constraint "Task_vipLevelId_fkey" for relation "Task" already exists
+ERROR:  constraint "Transaction_userId_fkey" for relation "Transaction" already exists
+ERROR:  constraint "WithdrawalRequest_userId_fkey" for relation "WithdrawalRequest" already exists

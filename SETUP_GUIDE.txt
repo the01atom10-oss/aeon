@@ -1,0 +1,167 @@
+═══════════════════════════════════════════════════════
+   HƯỚNG DẪN CÀI ĐẶT 9CARAT - CẬP NHẬT 18/12/2024
+═══════════════════════════════════════════════════════
+
+YÊU CẦU HỆ THỐNG:
+------------------
+✓ Docker Desktop (https://www.docker.com/products/docker-desktop/)
+✓ Node.js 18+ (https://nodejs.org/)
+✓ Git (optional, https://git-scm.com/)
+
+═══════════════════════════════════════════════════════
+CÁCH 1: DÙNG SCRIPT TỰ ĐỘNG (WINDOWS - KHUYẾN NGHỊ)
+═══════════════════════════════════════════════════════
+
+1. Giải nén file ZIP
+2. Nhấp đúp vào: start.bat
+3. Chờ script tự động setup (3-5 phút)
+4. Truy cập: http://localhost:3000
+
+Script sẽ tự động:
+- Cài dependencies
+- Khởi động Docker  
+- Generate Prisma
+- Push database schema
+- Seed tasks data
+- Tạo admin account
+
+═══════════════════════════════════════════════════════
+CÁCH 2: SETUP THỦ CÔNG
+═══════════════════════════════════════════════════════
+
+BƯỚC 1: CÀI DEPENDENCIES
+-------------------------
+npm install
+
+BƯỚC 2: KHỞI ĐỘNG DOCKER
+-------------------------
+docker-compose up -d
+
+Chờ ~30 giây để containers start
+
+BƯỚC 3: SETUP DATABASE
+-----------------------
+npx prisma generate
+npx prisma db push --accept-data-loss
+
+BƯỚC 4: SEED DỮ LIỆU
+---------------------
+npx tsx prisma/seed-tasks.ts
+
+BƯỚC 5: SEED DEMO ACCOUNTS
+---------------------------
+npx tsx prisma/seed-users.ts
+
+Sẽ tạo sẵn 2 tài khoản:
+
+👤 ADMIN:
+   Username: admin
+   Password: Admin@123
+   Balance: $10,000
+
+👤 USER:
+   Username: demo
+   Password: Demo@123
+   Balance: $1,000
+
+BƯỚC 6: CHẠY ỨNG DỤNG
+----------------------
+# Development mode:
+npm run dev
+
+# Production mode (Docker):
+docker-compose up -d
+
+═══════════════════════════════════════════════════════
+CẤU HÌNH ADMIN (SAU KHI ĐĂNG NHẬP)
+═══════════════════════════════════════════════════════
+
+1. CẤU HÌNH HỆ THỐNG (/admin/settings):
+   ✓ Email CSKH: support@9carat.com
+   ✓ SĐT CSKH: 1900-xxxx
+   ✓ Thông tin ngân hàng nhận tiền nạp
+
+2. THÊM SẢN PHẨM GIẬT ĐƠN (/admin/task-products):
+   ✓ Tên sản phẩm (VD: iPhone 15 Pro)
+   ✓ Giá ($) - Số tiền user "đặt cọc"
+   ✓ Upload ảnh sản phẩm
+   ✓ Trạng thái: Active
+
+3. QUẢN LÝ VIP LEVELS (/admin/vip-levels):
+   Mặc định đã có: Bronze, Silver, Gold, Platinum
+   Có thể chỉnh tỷ lệ hoa hồng
+
+4. DUYỆT NHIỆM VỤ (/admin/task-runs):
+   Khi user "Gửi đơn hàng", vào đây duyệt
+   → User sẽ nhận lại tiền gốc + hoa hồng
+
+═══════════════════════════════════════════════════════
+CÁC TÍNH NĂNG CHÍNH
+═══════════════════════════════════════════════════════
+
+✓ LIVE CHAT: Trò chuyện trực tiếp admin-user
+✓ LUCKY WHEEL: Vòng quay may mắn ($20/lượt)
+✓ GIẬT ĐƠN (Tasks): Nhận đơn → Gửi → Nhận hoa hồng
+✓ SHOP: Mua sản phẩm
+✓ NẠP/RÚT TIỀN: Quản lý số dư
+✓ VIP SYSTEM: 4 cấp độ với hoa hồng khác nhau
+✓ MÃ MỜI: 7 chữ số random (chỉ số)
+✓ IMAGE SLIDER: 18 ảnh từ AEON Mall
+
+═══════════════════════════════════════════════════════
+QUY TRÌNH GIẬT ĐƠN (TASKS)
+═══════════════════════════════════════════════════════
+
+USER:
+1. Vào "Nhiệm vụ" → Nhấn "Nhận đơn hàng"
+2. Hệ thống match random 1 sản phẩm
+3. Hiển thị: Tên, Ảnh, Giá, Hoa hồng
+4. User nhấn "Gửi đơn hàng" → Trừ tiền khỏi balance
+5. Chờ admin duyệt
+
+ADMIN:
+1. Vào /admin/task-runs
+2. Xem danh sách "Chờ duyệt"  
+3. Nhấn "Duyệt & Hoàn tiền"
+4. User nhận lại: Tiền gốc + Hoa hồng
+
+═══════════════════════════════════════════════════════
+TRUY CẬP ỨNG DỤNG
+═══════════════════════════════════════════════════════
+
+• LOCAL:     http://localhost:3000
+• LAN:       http://<IP_MÁY_BẠN>:3000
+• ADMIN:     http://localhost:3000/admin
+• DATABASE:  http://localhost:5432
+
+Tìm IP máy:
+- Windows: ipconfig
+- Mac/Linux: ifconfig
+
+═══════════════════════════════════════════════════════
+DỪNG ỨNG DỤNG
+═══════════════════════════════════════════════════════
+
+docker-compose down
+
+(Xóa luôn data: docker-compose down -v)
+
+═══════════════════════════════════════════════════════
+LƯU Ý QUAN TRỌNG
+═══════════════════════════════════════════════════════
+
+1. Đổi NEXTAUTH_SECRET trong .env trước khi production
+2. Đổi database password trong docker-compose.yml
+3. Backup database thường xuyên
+4. Folder uploads/products sẽ chứa ảnh sản phẩm
+5. Mã mời là 7 chữ số thuần (VD: 1234567)
+
+═══════════════════════════════════════════════════════
+HỖ TRỢ
+═══════════════════════════════════════════════════════
+
+Email: support@9carat.com
+Website: https://9carat.com
+
+═══════════════════════════════════════════════════════
+

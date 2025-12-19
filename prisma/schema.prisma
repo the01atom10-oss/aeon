@@ -1,0 +1,432 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  OPERATOR
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+enum TransactionType {
+  CREDIT
+  DEBIT
+  REWARD
+  COMMISSION
+  ADMIN_ADJUSTMENT
+  DEPOSIT
+  WITHDRAWAL
+  LUCKY_WHEEL
+  TASK_DEPOSIT   // Trừ tiền khi submit task
+  TASK_REFUND    // Hoàn trả + hoa hồng khi complete task
+}
+
+enum TransactionStatus {
+  POSTED
+  VOID
+}
+
+enum TaskRunState {
+  STARTED    // Đã match đơn, chờ người dùng gửi
+  ASSIGNED   // Đã gửi đơn, đã trừ tiền, đang xử lý
+  SUBMITTED  // (deprecated - dùng ASSIGNED)
+  COMPLETED  // Hoàn thành, đã hoàn trả tiền + hoa hồng
+  CANCELLED  // Hủy đơn
+}
+
+model User {
+  id              String   @id @default(cuid())
+  username        String   @unique
+  email           String?  @unique
+  phone           String?  @unique
+  passwordHash    String
+  withdrawalPinHash String?
+  role            UserRole @default(USER)
+  status          UserStatus @default(ACTIVE)
+  inviteCode      String?  @unique
+  referredBy      String?
+  balance         Decimal  @default(0) @db.Decimal(20, 2)
+  freeSpins       Int      @default(0)  // Số lượt quay miễn phí
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  transactions    Transaction[]
+  taskRuns        TaskRun[]
+  deposits        DepositRequest[]
+  withdrawals     WithdrawalRequest[]
+  adminActions    AdminAuditLog[] @relation("AdminActions")
+  targetedActions AdminAuditLog[] @relation("TargetedUser")
+  chatMessages    ChatMessage[]
+  luckyWheelSpins LuckyWheelSpin[]
+  productPurchases ProductPurchase[]
+  notifications   Notification[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([username])
+  @@index([inviteCode])
+  @@index([createdAt])
+}
+
+// Wallet model removed - using User.balance instead
+
+model Transaction {
+  id              String            @id @default(cuid())
+  userId          String
+  type            TransactionType
+  amount          Decimal           @db.Decimal(20, 2)
+  status          TransactionStatus @default(POSTED)
+  referenceId     String?
+  idempotencyKey  String            @unique
+  description     String
+  createdBy       String?
+  metadata        Json?
+  balanceBefore   Decimal           @db.Decimal(20, 2)
+  balanceAfter    Decimal           @db.Decimal(20, 2)
+  
+  createdAt       DateTime          @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@index([referenceId])
+}
+
+model VipLevel {
+  id             String  @id @default(cuid())
+  name           String  @unique
+  minBalance     Decimal @db.Decimal(20, 2)
+  commissionRate Decimal @db.Decimal(5, 4)
+  isActive       Boolean @default(true)
+  sortOrder      Int     @default(0)
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tasks        Task[]
+  taskProducts TaskProduct[]
+
+  @@index([minBalance])
+  @@index([sortOrder])
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  vipLevelId  String
+  name        String
+  description String?
+  basePrice   Decimal  @db.Decimal(20, 2)
+  rewardRate  Decimal  @db.Decimal(5, 4)
+  isActive    Boolean  @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  vipLevel VipLevel   @relation(fields: [vipLevelId], references: [id], onDelete: Cascade)
+  taskRuns TaskRun[]
+
+  @@index([vipLevelId])
+  @@index([isActive])
+}
+
+// Sản phẩm cho hệ thống "Giật đơn"
+model TaskProduct {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  imageUrl    String?
+  basePrice   Decimal  @db.Decimal(20, 2)  // Giá gốc sản phẩm
+  vipLevelId  String?  // Sản phẩm dành cho cấp VIP nào (null = tất cả)
+  isActive    Boolean  @default(true)
+  stock       Int      @default(999999)    // Số lượng "đơn" khả dụng
+  sortOrder   Int      @default(0)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  vipLevel    VipLevel? @relation(fields: [vipLevelId], references: [id], onDelete: SetNull)
+  taskRuns    TaskRun[]
+
+  @@index([vipLevelId])
+  @@index([isActive])
+  @@index([sortOrder])
+}
+
+model TaskRun {
+  id              String       @id @default(cuid())
+  userId          String
+  taskId          String
+  taskProductId   String?      // Sản phẩm được giật
+  state           TaskRunState @default(STARTED)
+  assignedPrice   Decimal?     @db.Decimal(20, 2)  // Giá gốc (số tiền bị trừ khi gửi đơn)
+  commissionRate  Decimal?     @db.Decimal(5, 4)   // Tỷ lệ hoa hồng
+  rewardAmount    Decimal?     @db.Decimal(20, 2)  // Hoa hồng nhận được
+  totalRefund     Decimal?     @db.Decimal(20, 2)  // Tổng hoàn trả = assignedPrice + rewardAmount
+  idempotencyKey  String       @unique
+  metadata        Json?
+  
+  createdAt       DateTime     @default(now())
+  submittedAt     DateTime?    // Thời điểm gửi đơn (trừ tiền)
+  completedAt     DateTime?    // Thời điểm hoàn thành (hoàn trả)
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task        Task         @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskProduct TaskProduct? @relation(fields: [taskProductId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([taskId])
+  @@index([taskProductId])
+  @@index([state])
+}
+
+model AdminAuditLog {
+  id            String   @id @default(cuid())
+  adminId       String
+  action        String
+  targetUserId  String?
+  beforeBalance Decimal? @db.Decimal(20, 2)
+  afterBalance  Decimal? @db.Decimal(20, 2)
+  note          String?
+  metadata      Json?
+  
+  createdAt     DateTime @default(now())
+
+  admin      User  @relation("AdminActions", fields: [adminId], references: [id], onDelete: Cascade)
+  targetUser User? @relation("TargetedUser", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([targetUserId])
+  @@index([createdAt])
+}
+
+enum DepositStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PROCESSING
+}
+
+model DepositRequest {
+  id              String        @id @default(cuid())
+  userId          String
+  amount          Decimal       @db.Decimal(20, 2)
+  status          DepositStatus @default(PENDING)
+  paymentMethod   String?
+  paymentProof    String?
+  note            String?
+  adminNote       String?
+  processedBy     String?
+  processedAt     DateTime?
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model WithdrawalRequest {
+  id              String           @id @default(cuid())
+  userId          String
+  amount          Decimal          @db.Decimal(20, 2)
+  status          WithdrawalStatus @default(PENDING)
+  bankName        String?
+  bankAccount     String?
+  bankAccountName String?
+  note            String?
+  adminNote       String?
+  processedBy     String?
+  processedAt     DateTime?
+  
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  userId    String?
+  message   String   @db.Text
+  isAdmin   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model LuckyWheelSpin {
+  id              String   @id @default(cuid())
+  userId          String
+  wheelPrizeId    String?  // Sản phẩm trúng thưởng
+  prizeName       String
+  prizeImage      String?
+  prizeType       String   @default("PRODUCT") // PRODUCT, CASH, VOUCHER
+  prizeValue      Decimal? @db.Decimal(20, 2)  // Giá trị (nếu là tiền)
+  shippingAddress String?  @db.Text            // Địa chỉ nhận hàng
+  shippingPhone   String?
+  shippingName    String?
+  shippingStatus  String   @default("PENDING") // PENDING, SHIPPED, DELIVERED
+  isFreeSpin      Boolean  @default(true)      // Có phải quay miễn phí không
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wheelPrize WheelPrize? @relation(fields: [wheelPrizeId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([wheelPrizeId])
+  @@index([shippingStatus])
+  @@index([createdAt])
+}
+
+// Sản phẩm trong vòng quay
+model WheelPrize {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  imageUrl    String?
+  prizeType   String   @default("PRODUCT") // PRODUCT, CASH, VOUCHER
+  value       Decimal? @db.Decimal(20, 2)  // Giá trị (nếu là tiền/voucher)
+  probability Decimal  @db.Decimal(5, 4)   // Xác suất trúng (0.0000 - 1.0000)
+  color       String?  // Màu hiển thị trên vòng quay
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  stock       Int      @default(999999)    // Số lượng còn lại
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  spins       LuckyWheelSpin[]
+
+  @@index([isActive])
+  @@index([sortOrder])
+}
+
+// Thông báo cho người dùng
+enum NotificationStatus {
+  UNREAD
+  READ
+}
+
+model Notification {
+  id        String             @id @default(cuid())
+  userId    String?            // Null = broadcast to all users
+  title     String
+  message   String             @db.Text
+  type      String             @default("INFO") // INFO, SUCCESS, WARNING, ERROR
+  status    NotificationStatus @default(UNREAD)
+  createdBy String?            // Admin tạo thông báo
+  
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  OUT_OF_STOCK
+}
+
+model Product {
+  id          String        @id @default(cuid())
+  name        String
+  description String?       @db.Text
+  price       Decimal       @db.Decimal(20, 2)
+  imageUrl    String?
+  stock       Int           @default(0)
+  status      ProductStatus @default(ACTIVE)
+  sortOrder   Int           @default(0)
+  
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  purchases   ProductPurchase[]
+
+  @@index([status])
+  @@index([sortOrder])
+  @@index([createdAt])
+}
+
+enum PurchaseStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+// Cấu hình hệ thống
+model SystemSettings {
+  id                String   @id @default(cuid())
+  key               String   @unique
+  value             String   @db.Text
+  description       String?
+  updatedBy         String?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([key])
+}
+
+model ProductPurchase {
+  id          String         @id @default(cuid())
+  userId      String
+  productId   String
+  quantity    Int            @default(1)
+  price       Decimal        @db.Decimal(20, 2)
+  totalAmount Decimal        @db.Decimal(20, 2)
+  status      PurchaseStatus @default(PENDING)
+  note        String?
+  
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([productId])
+  @@index([status])
+  @@index([createdAt])
+}

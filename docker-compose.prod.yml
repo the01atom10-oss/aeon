@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: 9carat-postgres-prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: carat9_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - 9carat-network
+
+  # Next.js Web Application
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: 9carat-web-prod
+    restart: unless-stopped
+    environment:
+      # Database
+      DATABASE_URL: "postgresql://postgres:postgres123@postgres:5432/carat9_db?schema=public"
+      
+      # NextAuth - QUAN TRỌNG: Thay YOUR_LOCAL_IP bằng IP máy chủ
+      NEXTAUTH_URL: "http://YOUR_LOCAL_IP:3000"
+      NEXTAUTH_SECRET: "your-super-secret-key-change-this-in-production"
+      
+      # App
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: 1
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - 9carat-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  9carat-network:
+    driver: bridge
