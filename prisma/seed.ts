@@ -16,11 +16,7 @@ async function main() {
             email: 'admin@example.com',
             passwordHash: adminPasswordHash,
             role: UserRole.ADMIN,
-            wallet: {
-                create: {
-                    balance: 0,
-                },
-            },
+            balance: 0,
         },
     })
     console.log('✅ Admin user created:', admin.username)
@@ -35,11 +31,7 @@ async function main() {
             email: 'user@example.com',
             passwordHash: testUserPasswordHash,
             role: UserRole.USER,
-            wallet: {
-                create: {
-                    balance: 100,
-                },
-            },
+            balance: 100,
         },
     })
     console.log('✅ Test user created:', testUser.username)
