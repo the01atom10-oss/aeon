@@ -57,18 +57,4 @@ export const adminBalanceAdjustmentSchema = z.object({
     description: z.string().min(10, 'Description must be at least 10 characters'),
 })
 
-export const depositRequestSchema = z.object({
-    amount: z.number().positive('Số tiền phải lớn hơn 0').min(10, 'Số tiền nạp tối thiểu là 10$'),
-    paymentMethod: z.string().optional(),
-    paymentProof: z.string().optional(),
-    note: z.string().optional(),
-})
-
-export const withdrawalRequestSchema = z.object({
-    amount: z.number().positive('Số tiền phải lớn hơn 0').min(10, 'Số tiền rút tối thiểu là 10$'),
-    withdrawalPin: z.string().min(6, 'Mã rút vốn phải có ít nhất 6 ký tự'),
-    bankName: z.string().min(1, 'Tên ngân hàng là bắt buộc'),
-    bankAccount: z.string().min(1, 'Số tài khoản là bắt buộc'),
-    bankAccountName: z.string().min(1, 'Tên chủ tài khoản là bắt buộc'),
-    note: z.string().optional(),
-})
+// Deposit and withdrawal schemas removed - functionality no longer available

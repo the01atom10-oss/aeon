@@ -9,10 +9,7 @@ export async function GET(req: NextRequest) {
                 key: {
                     in: [
                         'support_email',
-                        'support_phone',
-                        'deposit_bank_name',
-                        'deposit_bank_account',
-                        'deposit_account_name'
+                        'support_phone'
                     ]
                 }
             }
@@ -28,10 +25,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
             settings: {
                 support_email: settingsObj.support_email || 'support@9carat.com',
-                support_phone: settingsObj.support_phone || '1900-xxxx',
-                deposit_bank_name: settingsObj.deposit_bank_name || 'Vietcombank',
-                deposit_bank_account: settingsObj.deposit_bank_account || '0123456789',
-                deposit_account_name: settingsObj.deposit_account_name || 'CONG TY 9CARAT'
+                support_phone: settingsObj.support_phone || '1900-xxxx'
             }
         })
 
