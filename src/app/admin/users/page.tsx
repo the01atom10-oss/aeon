@@ -13,6 +13,8 @@ interface User {
     role: string
     status: string
     balance: string
+    inviteCode: string | null
+    referralCode: string | null
     createdAt: string
 }
 
@@ -31,6 +33,7 @@ export default function AdminUsersPage() {
         withdrawalPin: '',
         role: 'USER',
         inviteCode: '',
+        referralCode: '', // Mã giới thiệu do admin cấp (bắt buộc)
     })
     const [createMessage, setCreateMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
@@ -89,6 +92,7 @@ export default function AdminUsersPage() {
                     withdrawalPin: '',
                     role: 'USER',
                     inviteCode: '',
+                    referralCode: '',
                 })
                 setShowCreateForm(false)
                 fetchUsers()
@@ -220,7 +224,20 @@ export default function AdminUsersPage() {
                                         pattern="[0-9]{6}"
                                     />
                                 </div>
-                                <div className="md:col-span-2">
+                                <div>
+                                    <label className="block text-sm font-medium text-white/70 mb-2">
+                                        Mã giới thiệu * <span className="text-white/40 text-xs">(Bắt buộc - do admin cấp)</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={createForm.referralCode}
+                                        onChange={(e) => setCreateForm({ ...createForm, referralCode: e.target.value.toUpperCase() })}
+                                        className="w-full bg-white/5 rounded-xl px-4 py-3 border border-white/10 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 text-white placeholder-white/30"
+                                        placeholder="Nhập mã giới thiệu"
+                                        required
+                                    />
+                                </div>
+                                <div>
                                     <label className="block text-sm font-medium text-white/70 mb-2">
                                         Mã mời <span className="text-white/40 text-xs">(Để trống để tự động tạo)</span>
                                     </label>
@@ -280,6 +297,8 @@ export default function AdminUsersPage() {
                                 <tr className="border-b border-white/10">
                                     <th className="text-left py-3 px-4 text-white/70 font-semibold">Username</th>
                                     <th className="text-left py-3 px-4 text-white/70 font-semibold">Email/Phone</th>
+                                    <th className="text-left py-3 px-4 text-white/70 font-semibold">Mã giới thiệu</th>
+                                    <th className="text-left py-3 px-4 text-white/70 font-semibold">Mã mời</th>
                                     <th className="text-left py-3 px-4 text-white/70 font-semibold">Balance</th>
                                     <th className="text-left py-3 px-4 text-white/70 font-semibold">Status</th>
                                     <th className="text-left py-3 px-4 text-white/70 font-semibold">Joined</th>
@@ -292,6 +311,12 @@ export default function AdminUsersPage() {
                                         <td className="py-3 px-4 font-medium text-white">{user.username}</td>
                                         <td className="py-3 px-4 text-sm text-white/70">
                                             {user.email || user.phone || '-'}
+                                        </td>
+                                        <td className="py-3 px-4 text-sm text-yellow-400 font-medium">
+                                            {user.referralCode || '-'}
+                                        </td>
+                                        <td className="py-3 px-4 text-sm text-cyan-300 font-medium">
+                                            {user.inviteCode || '-'}
                                         </td>
                                         <td className="py-3 px-4 font-semibold text-cyan-400">
                                             {formatCurrency(user.balance)} $

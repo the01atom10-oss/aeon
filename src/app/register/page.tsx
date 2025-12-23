@@ -15,7 +15,7 @@ export default function RegisterPage() {
         phone: '',
         password: '',
         withdrawalPin: '',
-        inviteCode: '',
+        referralCode: '', // Mã giới thiệu bắt buộc
     })
     const [agreedToTerms, setAgreedToTerms] = useState(false)
     const [errors, setErrors] = useState<Record<string, string>>({})
@@ -101,15 +101,23 @@ export default function RegisterPage() {
                         <div>
                             <input
                                 type="tel"
-                                placeholder="Số điện thoại"
+                                placeholder="Số điện thoại (VD: 0912345678)"
                                 value={formData.phone}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, phone: e.target.value })
-                                }
+                                onChange={(e) => {
+                                    // Chỉ cho phép nhập số
+                                    const value = e.target.value.replace(/[^0-9]/g, '')
+                                    setFormData({ ...formData, phone: value })
+                                }}
+                                maxLength={11}
                                 className="w-full px-4 py-3 rounded-full bg-gray-100 border border-gray-200 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-all"
                                 required
                             />
                             {errors.phone && <p className="text-xs text-red-500 mt-1 ml-4">{errors.phone}</p>}
+                            {!errors.phone && formData.phone && (
+                                <p className="text-xs text-gray-500 mt-1 ml-4">
+                                    {formData.phone.length < 10 ? 'Số điện thoại phải có 10 số' : '✓ Định dạng hợp lệ'}
+                                </p>
+                            )}
                         </div>
 
                         <div>
@@ -143,13 +151,22 @@ export default function RegisterPage() {
                         <div>
                             <input
                                 type="text"
-                                placeholder="Mã mời hoặc Mã giới thiệu"
-                                value={formData.inviteCode}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, inviteCode: e.target.value })
-                                }
+                                placeholder="Mã giới thiệu * (Bắt buộc - do admin cấp)"
+                                value={formData.referralCode}
+                                onChange={(e) => {
+                                    // Chỉ cho phép chữ cái và số, tự động uppercase
+                                    const value = e.target.value.replace(/[^A-Z0-9]/gi, '').toUpperCase()
+                                    setFormData({ ...formData, referralCode: value })
+                                }}
                                 className="w-full px-4 py-3 rounded-full bg-gray-100 border border-gray-200 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-all"
+                                required
                             />
+                            {errors.referralCode && <p className="text-xs text-red-500 mt-1 ml-4">{errors.referralCode}</p>}
+                            {!errors.referralCode && formData.referralCode && (
+                                <p className="text-xs text-gray-500 mt-1 ml-4">
+                                    Mã giới thiệu phải tồn tại trong hệ thống. Vui lòng liên hệ admin nếu chưa có mã.
+                                </p>
+                            )}
                         </div>
 
                         <div className="flex items-center gap-2 px-2">

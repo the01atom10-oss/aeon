@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { UserService } from '@/services/user.service'
 import { UserRole } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(req: NextRequest) {
     try {
@@ -42,6 +43,8 @@ export async function GET(req: NextRequest) {
                     role: user.role,
                     status: user.status,
                     balance: user.balance ? user.balance.toString() : '0',
+                    inviteCode: user.inviteCode,
+                    referralCode: user.referralCode, // Mã giới thiệu do admin cấp
                     createdAt: user.createdAt.toISOString(),
                 })),
                 pagination: {
@@ -80,7 +83,7 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json()
-        const { username, email, phone, password, withdrawalPin, role, inviteCode } = body
+        const { username, email, phone, password, withdrawalPin, role, inviteCode, referralCode } = body
 
         // Validate required fields
         if (!username || !password || !withdrawalPin) {
@@ -90,13 +93,57 @@ export async function POST(req: NextRequest) {
             )
         }
 
-        // Create user
+        // Admin tạo user phải có referralCode (mã giới thiệu do admin cấp)
+        // Có thể dùng mã giới thiệu của chính admin hoặc mã khác đã tồn tại
+        if (!referralCode) {
+            // Nếu không có referralCode, dùng inviteCode của admin hiện tại làm referralCode
+            const admin = await prisma.user.findUnique({
+                where: { id: session.user.id },
+                select: { inviteCode: true, referralCode: true }
+            })
+            
+            if (!admin || (!admin.inviteCode && !admin.referralCode)) {
+                return NextResponse.json(
+                    { success: false, message: 'Mã giới thiệu là bắt buộc. Vui lòng nhập mã giới thiệu hợp lệ.' },
+                    { status: 400 }
+                )
+            }
+            
+            // Sử dụng mã của admin làm referralCode
+            const finalReferralCode = admin.referralCode || admin.inviteCode || ''
+            
+            const user = await UserService.createUser({
+                username,
+                email: email || undefined,
+                phone: phone || undefined,
+                password,
+                withdrawalPin,
+                referralCode: finalReferralCode,
+                inviteCode: inviteCode || undefined,
+                role: role || UserRole.USER,
+            })
+            
+            return NextResponse.json({
+                success: true,
+                message: 'User created successfully',
+                data: {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    inviteCode: user.inviteCode,
+                    referralCode: user.referralCode,
+                },
+            })
+        }
+
+        // Create user với referralCode được chỉ định
         const user = await UserService.createUser({
             username,
             email: email || undefined,
             phone: phone || undefined,
             password,
             withdrawalPin,
+            referralCode, // Mã giới thiệu bắt buộc
             inviteCode: inviteCode || undefined,
             role: role || UserRole.USER,
         })
@@ -109,6 +156,7 @@ export async function POST(req: NextRequest) {
                 username: user.username,
                 email: user.email,
                 inviteCode: user.inviteCode,
+                referralCode: user.referralCode,
             },
         })
     } catch (error) {

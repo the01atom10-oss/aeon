@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import Image from 'next/image'
+import { normalizeImageUrl, getAbsoluteImageUrl } from '@/lib/image-utils'
 
 interface TaskProduct {
     id: string
@@ -72,10 +73,14 @@ export default function AdminTaskProductsPage() {
 
             const data = await response.json()
 
-            if (response.ok) {
+            if (response.ok && data.url) {
+                console.log('✅ Upload thành công!')
+                console.log('📸 URL:', data.url)
+                console.log('📁 Path:', data.path)
                 setFormData(prev => ({ ...prev, imageUrl: data.url }))
                 alert('✅ Upload ảnh thành công!')
             } else {
+                console.error('❌ Upload thất bại:', data)
                 alert('❌ ' + (data.error || 'Upload thất bại'))
             }
         } catch (error) {
@@ -237,12 +242,23 @@ export default function AdminTaskProductsPage() {
                                 <label className="block text-sm font-medium mb-2">Ảnh sản phẩm</label>
                                 
                                 {formData.imageUrl && (
-                                    <div className="mb-3 relative w-32 h-32">
-                                        <Image
-                                            src={formData.imageUrl}
+                                    <div className="mb-3 relative w-32 h-32 bg-gray-100 rounded-lg overflow-hidden">
+                                        <img
+                                            src={normalizeImageUrl(formData.imageUrl)}
                                             alt="Preview"
-                                            fill
-                                            className="object-cover rounded-lg"
+                                            className="w-full h-full object-cover"
+                                            onLoad={() => console.log('✅ Ảnh đã load thành công:', formData.imageUrl)}
+                                            onError={(e) => {
+                                                console.error('❌ Lỗi load ảnh:', formData.imageUrl)
+                                                // Thử dùng absolute URL nếu relative path không work
+                                                const absoluteUrl = getAbsoluteImageUrl(formData.imageUrl)
+                                                if (e.currentTarget.src !== absoluteUrl) {
+                                                    e.currentTarget.src = absoluteUrl
+                                                } else {
+                                                    e.currentTarget.src = '/placeholder-product.png'
+                                                    e.currentTarget.onerror = null
+                                                }
+                                            }}
                                         />
                                     </div>
                                 )}
@@ -330,11 +346,16 @@ export default function AdminTaskProductsPage() {
                                     {/* Image */}
                                     <div className="w-24 h-24 relative flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
                                         {product.imageUrl ? (
-                                            <Image
-                                                src={product.imageUrl}
+                                            <img
+                                                src={normalizeImageUrl(product.imageUrl)}
                                                 alt={product.name}
-                                                fill
-                                                className="object-cover"
+                                                className="w-full h-full object-cover"
+                                                onLoad={() => console.log('✅ Ảnh load thành công:', product.imageUrl)}
+                                                onError={(e) => {
+                                                    console.error('❌ Lỗi load ảnh:', product.imageUrl, 'URL:', e.currentTarget.src)
+                                                    e.currentTarget.src = '/placeholder-product.png'
+                                                    e.currentTarget.onerror = null
+                                                }}
                                             />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-4xl">

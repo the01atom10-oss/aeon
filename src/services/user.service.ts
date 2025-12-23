@@ -9,7 +9,8 @@ export interface CreateUserInput {
     phone?: string
     password: string
     withdrawalPin: string
-    inviteCode?: string
+    referralCode: string  // Mã giới thiệu do admin cấp (bắt buộc)
+    inviteCode?: string    // Mã mời của user (tự động tạo)
     role?: UserRole
 }
 
@@ -68,12 +69,39 @@ export class UserService {
 
         // Check if phone exists (if provided)
         if (input.phone) {
+            // Chuẩn hóa số điện thoại trước khi kiểm tra
+            const normalizedPhone = input.phone.replace(/\s+/g, '')
             const existingPhone = await prisma.user.findUnique({
-                where: { phone: input.phone },
+                where: { phone: normalizedPhone },
             })
             if (existingPhone) {
-                throw new Error('Phone already exists')
+                throw new Error('Số điện thoại đã được sử dụng')
             }
+        }
+
+        // Kiểm tra mã giới thiệu có tồn tại không (phải do admin cấp)
+        if (!input.referralCode || input.referralCode.trim() === '') {
+            throw new Error('Mã giới thiệu là bắt buộc')
+        }
+
+        // Chuẩn hóa mã giới thiệu (uppercase, trim)
+        const normalizedReferralCode = input.referralCode.trim().toUpperCase()
+
+        // Kiểm tra mã giới thiệu có tồn tại trong hệ thống không
+        // Mã giới thiệu có thể là:
+        // 1. referralCode của một user (do admin cấp)
+        // 2. inviteCode của một user (mã mời tự động)
+        const referralExists = await prisma.user.findFirst({
+            where: {
+                OR: [
+                    { referralCode: normalizedReferralCode },
+                    { inviteCode: normalizedReferralCode }
+                ]
+            }
+        })
+
+        if (!referralExists) {
+            throw new Error(`Mã giới thiệu "${normalizedReferralCode}" không tồn tại trong hệ thống. Vui lòng liên hệ admin để được cấp mã giới thiệu hợp lệ.`)
         }
 
         // Hash password and withdrawal pin
@@ -94,18 +122,24 @@ export class UserService {
             }
         }
 
+        // Chuẩn hóa số điện thoại trước khi lưu
+        const normalizedPhone = input.phone ? input.phone.replace(/\s+/g, '') : null
+
         // Create user
         const user = await prisma.user.create({
             data: {
                 username: input.username,
                 email: input.email,
-                phone: input.phone,
+                phone: normalizedPhone,
                 passwordHash,
                 withdrawalPinHash,
                 role: input.role || UserRole.USER,
                 status: UserStatus.ACTIVE,
                 inviteCode,
+                referralCode: normalizedReferralCode, // Mã giới thiệu do admin cấp (đã chuẩn hóa)
+                referredBy: referralExists.id, // ID của người giới thiệu
                 balance: 0, // Initialize balance to 0
+                completedOrders: 0, // Khởi tạo số đơn đã hoàn thành
             },
         })
 

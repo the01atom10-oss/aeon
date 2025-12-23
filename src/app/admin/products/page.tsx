@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { normalizeImageUrl } from '@/lib/image-utils'
 
 interface Product {
     id: string
@@ -254,9 +255,13 @@ export default function AdminProductsPage() {
                         <CardContent className="p-4">
                             {product.imageUrl && (
                                 <img
-                                    src={product.imageUrl}
+                                    src={normalizeImageUrl(product.imageUrl)}
                                     alt={product.name}
                                     className="w-full h-48 object-cover rounded-lg mb-4"
+                                    onError={(e) => {
+                                        e.currentTarget.src = '/placeholder-product.png'
+                                        e.currentTarget.onerror = null
+                                    }}
                                 />
                             )}
                             <h3 className="font-bold text-lg mb-2">{product.name}</h3>

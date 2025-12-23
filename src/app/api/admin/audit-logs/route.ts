@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { AdminService } from '@/services/admin.service'
 import { UserRole } from '@prisma/client'
+import { isAdmin } from '@/lib/admin-permissions'
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,8 +16,8 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    // Only admins can view audit logs
-    if (session.user.role !== UserRole.ADMIN) {
+    // Chỉ admin mới có thể xem audit logs (cả cấp 1 và cấp 2)
+    if (!isAdmin(session.user)) {
       return NextResponse.json(
         { success: false, message: 'Forbidden' },
         { status: 403 }

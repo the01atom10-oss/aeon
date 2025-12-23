@@ -32,6 +32,8 @@ export async function GET(req: NextRequest) {
         name: level.name,
         minBalance: level.minBalance.toString(),
         commissionRate: level.commissionRate.toString(),
+        maxOrders: level.maxOrders,
+        autoApproveLimit: level.autoApproveLimit,
         isActive: level.isActive,
         sortOrder: level.sortOrder,
       })),

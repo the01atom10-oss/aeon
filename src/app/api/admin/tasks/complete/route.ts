@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { nanoid } from 'nanoid'
+import { canApproveOrders } from '@/lib/admin-permissions'
+import { AuditLogService } from '@/services/audit-log.service'
 
 // POST - Admin hoàn thành đơn hàng (hoàn trả tiền + hoa hồng)
 export async function POST(req: NextRequest) {
@@ -10,7 +12,8 @@ export async function POST(req: NextRequest) {
         console.log('🚀 [COMPLETE TASK] Begin request')
         const session = await getServerSession(authOptions)
 
-        if (!session?.user || session.user.role !== 'ADMIN') {
+        // Admin cấp 1 và cấp 2 đều có thể duyệt đơn
+        if (!session?.user || !canApproveOrders(session.user)) {
             console.log('❌ [COMPLETE TASK] Unauthorized')
             return NextResponse.json(
                 { error: 'Unauthorized' },
@@ -72,17 +75,25 @@ export async function POST(req: NextRequest) {
             const totalRefund = Number(taskRun.totalRefund)
             const newBalance = currentBalance + totalRefund
 
-            // Refund balance (original + commission) + tặng 1 lượt quay
-            const currentFreeSpins = taskRun.user.freeSpins || 0
+            // Lấy số đơn đã hoàn thành hiện tại
+            const userWithOrders = await tx.user.findUnique({
+                where: { id: taskRun.userId },
+                select: { completedOrders: true, freeSpins: true }
+            })
+
+            const currentCompletedOrders = userWithOrders?.completedOrders || 0
+            const currentFreeSpins = userWithOrders?.freeSpins || 0
             const newFreeSpins = currentFreeSpins + 1
             
             console.log(`🎁 [COMPLETE TASK] Adding free spin: ${currentFreeSpins} -> ${newFreeSpins}`)
+            console.log(`📊 [COMPLETE TASK] Completed orders: ${currentCompletedOrders} -> ${currentCompletedOrders + 1}`)
             
             await tx.user.update({
                 where: { id: taskRun.userId },
                 data: { 
                     balance: newBalance,
-                    freeSpins: newFreeSpins // Tặng 1 lượt quay miễn phí
+                    freeSpins: newFreeSpins, // Tặng 1 lượt quay miễn phí
+                    completedOrders: { increment: 1 } // Tăng số đơn đã hoàn thành
                 }
             })
             
@@ -118,7 +129,9 @@ export async function POST(req: NextRequest) {
                 where: { id },
                 data: {
                     state: 'COMPLETED',
-                    completedAt: new Date()
+                    completedAt: new Date(),
+                    approvedBy: session.user.id,
+                    approvedAt: new Date()
                 },
                 include: {
                     task: { include: { vipLevel: true } },
@@ -134,10 +147,28 @@ export async function POST(req: NextRequest) {
             })
 
             console.log(`✅ [COMPLETE TASK] Task run updated to COMPLETED`)
-            return { updatedTaskRun, newBalance }
+            return { 
+                updatedTaskRun, 
+                newBalance, 
+                currentBalance, 
+                totalRefund, 
+                taskProductName: taskRun.taskProduct?.name || 'Sản phẩm',
+                targetUserId: taskRun.userId
+            }
         })
         
         console.log(`🎉 [COMPLETE TASK] Success!`)
+
+        // Tạo audit log cho hành động duyệt đơn hàng
+        await AuditLogService.logOrderApproval(
+            session.user.id,
+            result.targetUserId,
+            id,
+            result.currentBalance,
+            result.newBalance,
+            result.taskProductName,
+            result.totalRefund
+        )
 
         return NextResponse.json({
             success: true,

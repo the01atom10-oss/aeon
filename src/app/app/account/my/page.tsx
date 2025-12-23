@@ -60,37 +60,12 @@ export default async function MyAccountPage() {
                         <span className="text-gray-400">›</span>
                     </div>
                 </Link>
-                <Link href="/app/account/deposit" className="block bg-gray-800/60 rounded-lg p-4 backdrop-blur-sm border border-white/10 hover:bg-gray-700/60 transition-colors">
-                    <div className="flex items-center justify-between">
-                        <span className="font-medium">Nạp tiền</span>
-                        <span className="text-gray-400">›</span>
-                    </div>
-                </Link>
-                <Link href="/app/account/withdraw" className="block bg-gray-800/60 rounded-lg p-4 backdrop-blur-sm border border-white/10 hover:bg-gray-700/60 transition-colors">
-                    <div className="flex items-center justify-between">
-                        <span className="font-medium">Rút tiền</span>
-                        <span className="text-gray-400">›</span>
-                    </div>
-                </Link>
-                <Link href="/app/account/withdraw-history" className="block bg-gray-800/60 rounded-lg p-4 backdrop-blur-sm border border-white/10 hover:bg-gray-700/60 transition-colors">
-                    <div className="flex items-center justify-between">
-                        <span className="font-medium">Lịch sử rút tiền</span>
-                        <span className="text-gray-400">›</span>
-                    </div>
-                </Link>
-                <Link href="/app/account/deposit-history" className="block bg-gray-800/60 rounded-lg p-4 backdrop-blur-sm border border-white/10 hover:bg-gray-700/60 transition-colors">
-                    <div className="flex items-center justify-between">
-                        <span className="font-medium">Lịch sử nạp tiền</span>
-                        <span className="text-gray-400">›</span>
-                    </div>
-                </Link>
-                <Link href="/app/account/order-history" className="block bg-gray-800/60 rounded-lg p-4 backdrop-blur-sm border border-white/10 hover:bg-gray-700/60 transition-colors">
+                {/* <Link href="/app/account/order-history" className="block bg-gray-800/60 rounded-lg p-4 backdrop-blur-sm border border-white/10 hover:bg-gray-700/60 transition-colors">
                     <div className="flex items-center justify-between">
                         <span className="font-medium">Lịch sử đơn hàng</span>
                         <span className="text-gray-400">›</span>
                     </div>
-                </Link>
-                
+                </Link> */}
             </div>
 
             {/* Logout Button */}

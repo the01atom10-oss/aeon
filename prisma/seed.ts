@@ -6,20 +6,37 @@ const prisma = new PrismaClient()
 async function main() {
     console.log('🌱 Starting seed...')
 
-    // Create admin user
+    // Create admin user với adminLevel LEVEL_1
     const adminPasswordHash = await bcrypt.hash('Admin@12345', 10)
+    
+    // Tạo mã mời cho admin
+    const adminInviteCode = 'ADMIN001'
+    
     const admin = await prisma.user.upsert({
-        where: { email: 'admin@example.com' },
-        update: {},
-        create: {
-            username: 'admin',
-            email: 'admin@example.com',
+        where: { username: 'admin' },
+        update: {
             passwordHash: adminPasswordHash,
             role: UserRole.ADMIN,
+            adminLevel: 'LEVEL_1',
+            inviteCode: adminInviteCode,
+            status: 'ACTIVE',
+        },
+        create: {
+            username: 'admin',
+            email: 'admin@9caratonline.com',
+            passwordHash: adminPasswordHash,
+            role: UserRole.ADMIN,
+            adminLevel: 'LEVEL_1', // Admin cấp 1 - toàn quyền
+            inviteCode: adminInviteCode,
             balance: 0,
+            status: 'ACTIVE',
+            withdrawalPin: '0000',
         },
     })
     console.log('✅ Admin user created:', admin.username)
+    console.log('   - Password: Admin@12345')
+    console.log('   - Admin Level: LEVEL_1 (Toàn quyền)')
+    console.log('   - Invite Code:', adminInviteCode)
 
     // Create test users
     const testUserPasswordHash = await bcrypt.hash('Test@12345', 10)

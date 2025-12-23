@@ -1,6 +1,33 @@
 import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
+// Sử dụng database carat9_reward với mật khẩu 9Carataloonline. (giống VPS)
+// URL encode mật khẩu: 9Carataloonline. -> 9Carataloonline%2E
+const defaultUrl = 'postgresql://postgres:9Carataloonline%2E@localhost:5432/carat9_reward?schema=public'
+const databaseUrl = process.env.DATABASE_URL || defaultUrl
+
+// Nếu DATABASE_URL có database khác, thay thế bằng carat9_reward
+let fixedDatabaseUrl = databaseUrl
+if (databaseUrl.includes('aeon_reward')) {
+    fixedDatabaseUrl = databaseUrl.replace('aeon_reward', 'carat9_reward')
+} else if (databaseUrl.includes('postgres@localhost') && !databaseUrl.includes('carat9_reward')) {
+    // Thay thế toàn bộ URL
+    fixedDatabaseUrl = defaultUrl
+}
+
+// Đảm bảo mật khẩu được URL encode
+if (fixedDatabaseUrl.includes('9Carataloonline.') && !fixedDatabaseUrl.includes('9Carataloonline%2E')) {
+    fixedDatabaseUrl = fixedDatabaseUrl.replace('9Carataloonline.', '9Carataloonline%2E')
+}
+
+console.log('🔗 Using DATABASE_URL:', fixedDatabaseUrl.replace(/:[^:@]+@/, ':****@'))
+
+const prisma = new PrismaClient({
+    datasources: {
+        db: {
+            url: fixedDatabaseUrl
+        }
+    }
+})
 
 async function main() {
     console.log('🌱 Seeding tasks...')

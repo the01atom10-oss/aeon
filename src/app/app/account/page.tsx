@@ -78,40 +78,6 @@ export default async function AccountPage() {
                 </div>
             </div>
 
-            {/* Quick Actions - 2 buttons */}
-            <div className="grid grid-cols-2 gap-3">
-                <Link href="/app/account/deposit" className="group">
-                    <div className="bg-white/8 backdrop-blur-xl rounded-3xl p-5 border border-white/18 shadow-xl hover:bg-white/12 transition-all">
-                        <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-400/30 flex items-center justify-center">
-                                <svg className="w-7 h-7 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p className="text-white font-semibold text-lg">Nạp nhanh</p>
-                                <p className="text-white/60 text-xs">Chuyển khoản ngay</p>
-                            </div>
-                        </div>
-                    </div>
-                </Link>
-                
-                <Link href="/app/account/withdraw" className="group">
-                    <div className="bg-white/8 backdrop-blur-xl rounded-3xl p-5 border border-white/18 shadow-xl hover:bg-white/12 transition-all">
-                        <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500/20 to-pink-500/20 border border-rose-400/30 flex items-center justify-center">
-                                <svg className="w-7 h-7 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p className="text-white font-semibold text-lg">Rút nhanh</p>
-                                <p className="text-white/60 text-xs">Về tài khoản</p>
-                            </div>
-                        </div>
-                    </div>
-                </Link>
-            </div>
 
             {/* Lucky Wheel Featured Button */}
             <Link href="/app/lucky-wheel" className="block group">

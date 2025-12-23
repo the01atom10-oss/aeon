@@ -16,6 +16,11 @@ enum UserRole {
   ADMIN
 }
 
+enum AdminLevel {
+  LEVEL_1  // Toàn quyền
+  LEVEL_2  // Quyền hạn chế
+}
+
 enum UserStatus {
   ACTIVE
   SUSPENDED
@@ -28,8 +33,6 @@ enum TransactionType {
   REWARD
   COMMISSION
   ADMIN_ADJUSTMENT
-  DEPOSIT
-  WITHDRAWAL
   LUCKY_WHEEL
   TASK_DEPOSIT   // Trừ tiền khi submit task
   TASK_REFUND    // Hoàn trả + hoa hồng khi complete task
@@ -56,11 +59,14 @@ model User {
   passwordHash    String
   withdrawalPinHash String?
   role            UserRole @default(USER)
+  adminLevel      AdminLevel?  // Chỉ dành cho ADMIN
   status          UserStatus @default(ACTIVE)
   inviteCode      String?  @unique
-  referredBy      String?
+  referredBy      String?  // Mã giới thiệu của người giới thiệu
+  referralCode    String?  // Mã giới thiệu do admin cấp (bắt buộc khi đăng ký)
   balance         Decimal  @default(0) @db.Decimal(20, 2)
   freeSpins       Int      @default(0)  // Số lượt quay miễn phí
+  completedOrders Int     @default(0)  // Số đơn đã hoàn thành
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -68,8 +74,6 @@ model User {
   // Relations
   transactions    Transaction[]
   taskRuns        TaskRun[]
-  deposits        DepositRequest[]
-  withdrawals     WithdrawalRequest[]
   adminActions    AdminAuditLog[] @relation("AdminActions")
   targetedActions AdminAuditLog[] @relation("TargetedUser")
   chatMessages    ChatMessage[]
@@ -81,6 +85,7 @@ model User {
   @@index([phone])
   @@index([username])
   @@index([inviteCode])
+  @@index([referralCode])
   @@index([createdAt])
 }
 
@@ -112,18 +117,21 @@ model Transaction {
 }
 
 model VipLevel {
-  id             String  @id @default(cuid())
-  name           String  @unique
-  minBalance     Decimal @db.Decimal(20, 2)
-  commissionRate Decimal @db.Decimal(5, 4)
-  isActive       Boolean @default(true)
-  sortOrder      Int     @default(0)
+  id                 String  @id @default(cuid())
+  name               String  @unique
+  minBalance          Decimal @db.Decimal(20, 2)
+  commissionRate     Decimal @db.Decimal(5, 4)
+  maxOrders          Int     @default(999999)  // Số đơn tối đa
+  autoApproveLimit   Int     @default(0)      // Số đơn đầu tự động duyệt
+  isActive           Boolean @default(true)
+  sortOrder          Int     @default(0)
   
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   tasks        Task[]
   taskProducts TaskProduct[]
+  shopGroups   ShopGroup[]
 
   @@index([minBalance])
   @@index([sortOrder])
@@ -165,6 +173,7 @@ model TaskProduct {
 
   vipLevel    VipLevel? @relation(fields: [vipLevelId], references: [id], onDelete: SetNull)
   taskRuns    TaskRun[]
+  shopGroups  ShopGroupTaskProduct[] // Quan hệ many-to-many với ShopGroup
 
   @@index([vipLevelId])
   @@index([isActive])
@@ -181,6 +190,9 @@ model TaskRun {
   commissionRate  Decimal?     @db.Decimal(5, 4)   // Tỷ lệ hoa hồng
   rewardAmount    Decimal?     @db.Decimal(20, 2)  // Hoa hồng nhận được
   totalRefund     Decimal?     @db.Decimal(20, 2)  // Tổng hoàn trả = assignedPrice + rewardAmount
+  approvalRequired Boolean     @default(true)     // Cần admin duyệt hay không
+  approvedBy      String?      // Admin đã duyệt
+  approvedAt      DateTime?    // Thời điểm duyệt
   idempotencyKey  String       @unique
   metadata        Json?
   
@@ -196,6 +208,7 @@ model TaskRun {
   @@index([taskId])
   @@index([taskProductId])
   @@index([state])
+  @@index([approvalRequired])
 }
 
 model AdminAuditLog {
@@ -218,63 +231,6 @@ model AdminAuditLog {
   @@index([createdAt])
 }
 
-enum DepositStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-enum WithdrawalStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  PROCESSING
-}
-
-model DepositRequest {
-  id              String        @id @default(cuid())
-  userId          String
-  amount          Decimal       @db.Decimal(20, 2)
-  status          DepositStatus @default(PENDING)
-  paymentMethod   String?
-  paymentProof    String?
-  note            String?
-  adminNote       String?
-  processedBy     String?
-  processedAt     DateTime?
-  
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([status])
-  @@index([createdAt])
-}
-
-model WithdrawalRequest {
-  id              String           @id @default(cuid())
-  userId          String
-  amount          Decimal          @db.Decimal(20, 2)
-  status          WithdrawalStatus @default(PENDING)
-  bankName        String?
-  bankAccount     String?
-  bankAccountName String?
-  note            String?
-  adminNote       String?
-  processedBy     String?
-  processedAt     DateTime?
-  
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([status])
-  @@index([createdAt])
-}
 
 model ChatMessage {
   id        String   @id @default(cuid())
@@ -376,14 +332,17 @@ model Product {
   imageUrl    String?
   stock       Int           @default(0)
   status      ProductStatus @default(ACTIVE)
+  shopGroupId String?       // Thuộc gian hàng nào
   sortOrder   Int           @default(0)
   
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
+  shopGroup   ShopGroup?    @relation(fields: [shopGroupId], references: [id], onDelete: SetNull)
   purchases   ProductPurchase[]
 
   @@index([status])
+  @@index([shopGroupId])
   @@index([sortOrder])
   @@index([createdAt])
 }
@@ -407,6 +366,45 @@ model SystemSettings {
   updatedAt         DateTime @updatedAt
 
   @@index([key])
+}
+
+// Nhóm gian hàng
+model ShopGroup {
+  id          String   @id @default(cuid())
+  name        String   @unique  // Tên gian hàng: ĐỒNG, BẠC, VÀNG, BẠCH KIM, KIM CƯƠNG, PREMIUM VIP
+  description String?  @db.Text
+  vipLevelId  String   // Liên kết với VIP level
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  vipLevel   VipLevel  @relation(fields: [vipLevelId], references: [id], onDelete: Cascade)
+  products   Product[]
+  taskProducts ShopGroupTaskProduct[] // Quan hệ many-to-many với TaskProduct
+
+  @@index([vipLevelId])
+  @@index([sortOrder])
+}
+
+// Bảng trung gian cho quan hệ many-to-many giữa ShopGroup và TaskProduct
+model ShopGroupTaskProduct {
+  id            String   @id @default(cuid())
+  shopGroupId   String
+  taskProductId String
+  sortOrder     Int      @default(0) // Thứ tự hiển thị trong gian hàng
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  shopGroup    ShopGroup   @relation(fields: [shopGroupId], references: [id], onDelete: Cascade)
+  taskProduct  TaskProduct @relation(fields: [taskProductId], references: [id], onDelete: Cascade)
+
+  @@unique([shopGroupId, taskProductId]) // Một sản phẩm chỉ có thể thêm vào một gian hàng một lần
+  @@index([shopGroupId])
+  @@index([taskProductId])
+  @@index([sortOrder])
 }
 
 model ProductPurchase {

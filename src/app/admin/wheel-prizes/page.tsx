@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { normalizeImageUrl, getAbsoluteImageUrl } from '@/lib/image-utils'
 
 interface WheelPrize {
     id: string
@@ -237,9 +238,13 @@ export default function WheelPrizesPage() {
                                 {imagePreview && (
                                     <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-white/20">
                                         <img
-                                            src={imagePreview}
+                                            src={getAbsoluteImageUrl(imagePreview)}
                                             alt="Preview"
                                             className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                e.currentTarget.src = '/placeholder-product.png'
+                                                e.currentTarget.onerror = null
+                                            }}
                                         />
                                     </div>
                                 )}
@@ -379,11 +384,7 @@ export default function WheelPrizesPage() {
                                 {prize.imageUrl ? (
                                     <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-lg overflow-hidden bg-white/5 border border-white/20 flex-shrink-0">
                                         <img
-                                            src={prize.imageUrl.startsWith('http') 
-                                                ? prize.imageUrl 
-                                                : prize.imageUrl.startsWith('/') 
-                                                    ? prize.imageUrl 
-                                                    : `/${prize.imageUrl}`}
+                                            src={normalizeImageUrl(prize.imageUrl)}
                                             alt={prize.name}
                                             className="w-full h-full object-cover"
                                             onError={(e) => {

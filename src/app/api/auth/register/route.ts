@@ -10,14 +10,20 @@ export async function POST(req: NextRequest) {
         // Validate input
         const validatedData = registerSchema.parse(body)
 
+        // Chuẩn hóa số điện thoại (loại bỏ khoảng trắng)
+        const normalizedPhone = validatedData.phone.replace(/\s+/g, '')
+
+        // Chuẩn hóa mã giới thiệu (uppercase, trim)
+        const normalizedReferralCode = validatedData.referralCode.trim().toUpperCase()
+
         // Create user
         const user = await UserService.createUser({
             username: validatedData.username,
             email: validatedData.email || undefined,
-            phone: validatedData.phone || undefined,
+            phone: normalizedPhone,
             password: validatedData.password,
             withdrawalPin: validatedData.withdrawalPin,
-            inviteCode: validatedData.inviteCode,
+            referralCode: normalizedReferralCode, // Mã giới thiệu bắt buộc (đã chuẩn hóa)
         })
 
         return NextResponse.json(

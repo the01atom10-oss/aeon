@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { Button } from '@/components/ui/Button'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import { useSession } from 'next-auth/react'
 
 interface AuditLog {
     id: string
@@ -23,8 +25,13 @@ interface AuditLog {
 }
 
 export default function AuditLogsPage() {
+    const { data: session } = useSession()
     const [logs, setLogs] = useState<AuditLog[]>([])
     const [loading, setLoading] = useState(true)
+    const [deleting, setDeleting] = useState<string | null>(null)
+
+    // Kiểm tra xem user có phải admin Level 1 không
+    const isAdminLevel1 = session?.user?.role === 'ADMIN' && (session.user as any)?.adminLevel === 'LEVEL_1'
 
     useEffect(() => {
         fetchLogs()
@@ -41,6 +48,33 @@ export default function AuditLogsPage() {
             console.error('Failed to fetch audit logs:', error)
         } finally {
             setLoading(false)
+        }
+    }
+
+    const handleDelete = async (logId: string) => {
+        if (!confirm('Bạn có chắc chắn muốn xóa audit log này? Thao tác này không thể hoàn tác.')) {
+            return
+        }
+
+        setDeleting(logId)
+        try {
+            const res = await fetch(`/api/admin/audit-logs/${logId}`, {
+                method: 'DELETE'
+            })
+
+            const data = await res.json()
+
+            if (res.ok && data.success) {
+                alert('✅ Xóa audit log thành công!')
+                fetchLogs() // Reload danh sách
+            } else {
+                alert('❌ ' + (data.error || data.message || 'Không thể xóa audit log'))
+            }
+        } catch (error) {
+            console.error('Failed to delete audit log:', error)
+            alert('❌ Đã xảy ra lỗi khi xóa audit log')
+        } finally {
+            setDeleting(null)
         }
     }
 
@@ -71,6 +105,9 @@ export default function AuditLogsPage() {
                                     <th className="text-left py-3 px-4 text-sm font-medium">Target User</th>
                                     <th className="text-left py-3 px-4 text-sm font-medium">Balance Change</th>
                                     <th className="text-left py-3 px-4 text-sm font-medium">Note</th>
+                                    {isAdminLevel1 && (
+                                        <th className="text-left py-3 px-4 text-sm font-medium">Actions</th>
+                                    )}
                                 </tr>
                             </thead>
                             <tbody>
@@ -107,6 +144,17 @@ export default function AuditLogsPage() {
                                         <td className="py-3 px-4 text-sm text-gray-600">
                                             {log.note || '-'}
                                         </td>
+                                        {isAdminLevel1 && (
+                                            <td className="py-3 px-4">
+                                                <Button
+                                                    onClick={() => handleDelete(log.id)}
+                                                    disabled={deleting === log.id}
+                                                    className="bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1"
+                                                >
+                                                    {deleting === log.id ? 'Đang xóa...' : '🗑️ Xóa'}
+                                                </Button>
+                                            </td>
+                                        )}
                                     </tr>
                                 ))}
                             </tbody>

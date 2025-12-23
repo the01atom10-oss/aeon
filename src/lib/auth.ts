@@ -25,6 +25,15 @@ export const authOptions: NextAuthOptions = {
                             { email: credentials.username },
                         ],
                     },
+                    select: {
+                        id: true,
+                        username: true,
+                        email: true,
+                        role: true,
+                        adminLevel: true,
+                        status: true,
+                        passwordHash: true
+                    }
                 })
 
                 if (!user) {
@@ -51,6 +60,7 @@ export const authOptions: NextAuthOptions = {
                     username: user.username,
                     email: user.email,
                     role: user.role,
+                    adminLevel: user.adminLevel,
                 } as NextAuthUser
             },
         }),
@@ -69,6 +79,7 @@ export const authOptions: NextAuthOptions = {
                 token.id = user.id
                 token.username = (user as any).username
                 token.role = (user as any).role
+                token.adminLevel = (user as any).adminLevel
             }
             return token
         },
@@ -77,6 +88,7 @@ export const authOptions: NextAuthOptions = {
                 (session.user as any).id = token.id;
                 (session.user as any).username = token.username;
                 (session.user as any).role = token.role;
+                (session.user as any).adminLevel = token.adminLevel;
             }
             return session
         },

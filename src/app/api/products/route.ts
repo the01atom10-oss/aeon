@@ -6,10 +6,19 @@ import { prisma } from '@/lib/prisma'
 // Get active products (for users)
 export async function GET(req: NextRequest) {
     try {
+        const { searchParams } = new URL(req.url)
+        const shopGroupId = searchParams.get('shopGroupId')
+
+        const where: any = {
+            status: 'ACTIVE'
+        }
+
+        if (shopGroupId) {
+            where.shopGroupId = shopGroupId
+        }
+
         const products = await prisma.product.findMany({
-            where: {
-                status: 'ACTIVE'
-            },
+            where,
             orderBy: [
                 { sortOrder: 'asc' },
                 { createdAt: 'desc' }

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
@@ -18,7 +19,9 @@ interface Task {
     }
 }
 
-export default function TasksPage() {
+function TasksPageContent() {
+    const searchParams = useSearchParams()
+    const productId = searchParams.get('productId')
     const [tasks, setTasks] = useState<Task[]>([])
     const [loading, setLoading] = useState(true)
     const [starting, setStarting] = useState<string | null>(null)
@@ -47,14 +50,17 @@ export default function TasksPage() {
             const res = await fetch('/api/tasks/start', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ taskId }),
+                body: JSON.stringify({ 
+                    taskId,
+                    productId: productId || undefined // Nếu có productId từ URL, gửi kèm
+                }),
             })
 
             const data = await res.json()
 
             if (data.success) {
                 // Redirect to task run page
-                window.location.href = `/app/tasks/${data.data.id}`
+                window.location.href = `/app/tasks/${data.data.runId}`
             } else {
                 alert(data.message || 'Không thể bắt đầu nhiệm vụ')
             }
@@ -145,5 +151,17 @@ export default function TasksPage() {
                 </div>
             )}
         </div>
+    )
+}
+
+export default function TasksPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex justify-center items-center min-h-[400px]">
+                <LoadingSpinner size="lg" />
+            </div>
+        }>
+            <TasksPageContent />
+        </Suspense>
     )
 }

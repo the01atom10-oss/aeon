@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { canManageProducts } from '@/lib/admin-permissions'
 
 // GET - Lấy danh sách sản phẩm vòng quay
 export async function GET(req: NextRequest) {
     try {
         const session = await getServerSession(authOptions)
         
-        if (!session || session.user.role !== 'ADMIN') {
+        if (!session || !canManageProducts(session.user)) {
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 401 }
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
     try {
         const session = await getServerSession(authOptions)
         
-        if (!session || session.user.role !== 'ADMIN') {
+        if (!session || !canManageProducts(session.user)) {
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 401 }

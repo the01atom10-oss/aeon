@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
         const body = await req.json()
         console.log('📝 [START TASK] Request body:', body)
-        const { taskId } = body
+        const { taskId, productId } = body
 
         if (!taskId) {
             console.log('❌ [START TASK] Missing taskId')
@@ -85,48 +85,131 @@ export async function POST(req: NextRequest) {
         // Match a product for this task (random from available products)
         console.log('🔍 [START TASK] Looking for active products...')
         console.log(`👤 [START TASK] User VIP Level ID: ${userVipLevel?.id || 'NONE'}`)
+        console.log(`👤 [START TASK] User VIP Level Name: ${userVipLevel?.name || 'NONE'}`)
         
-        // Build where clause for products
-        const productWhere: any = {
-            isActive: true,
-            stock: { gt: 0 } // Chỉ lấy sản phẩm còn hàng
-        }
+        let availableProducts: any[] = []
 
-        // Filter by VIP level: null = tất cả, hoặc phù hợp với user VIP level
-        if (userVipLevel) {
-            productWhere.OR = [
-                { vipLevelId: null }, // Sản phẩm cho tất cả
-                { vipLevelId: userVipLevel.id } // Sản phẩm cho VIP level của user
-            ]
+        // Nếu có productId từ request (user chọn sản phẩm cụ thể từ gian hàng)
+        if (productId) {
+            console.log(`🎯 [START TASK] User selected specific product: ${productId}`)
+            const selectedProduct = await prisma.taskProduct.findUnique({
+                where: { id: productId },
+                include: { vipLevel: true }
+            })
+
+            if (!selectedProduct || !selectedProduct.isActive || selectedProduct.stock <= 0) {
+                return NextResponse.json(
+                    { 
+                        success: false,
+                        message: 'Sản phẩm không khả dụng hoặc đã hết hàng.' 
+                    },
+                    { status: 404 }
+                )
+            }
+
+            // Kiểm tra VIP level của sản phẩm có phù hợp với user không
+            if (selectedProduct.vipLevelId && selectedProduct.vipLevelId !== userVipLevel?.id) {
+                return NextResponse.json(
+                    { 
+                        success: false,
+                        message: `Sản phẩm này chỉ dành cho VIP ${selectedProduct.vipLevel?.name || 'khác'}.` 
+                    },
+                    { status: 403 }
+                )
+            }
+
+            // Sử dụng sản phẩm đã chọn
+            availableProducts = [selectedProduct]
         } else {
-            // Nếu user chưa có VIP level, chỉ lấy sản phẩm cho tất cả
-            productWhere.vipLevelId = null
-        }
+            // Lấy sản phẩm từ gian hàng tương ứng với VIP level của user
+            if (userVipLevel) {
+                // Tìm ShopGroup tương ứng với VIP level của user
+                const shopGroup = await prisma.shopGroup.findFirst({
+                    where: {
+                        vipLevelId: userVipLevel.id,
+                        isActive: true
+                    },
+                    include: {
+                        taskProducts: {
+                            where: {
+                                taskProduct: {
+                                    isActive: true,
+                                    stock: { gt: 0 }
+                                }
+                            },
+                            include: {
+                                taskProduct: {
+                                    include: {
+                                        vipLevel: true
+                                    }
+                                }
+                            },
+                            orderBy: {
+                                sortOrder: 'asc'
+                            }
+                        }
+                    }
+                })
 
-        const availableProducts = await prisma.taskProduct.findMany({
-            where: productWhere,
-            orderBy: { sortOrder: 'asc' }
-        })
+                if (shopGroup && shopGroup.taskProducts.length > 0) {
+                    // Lấy TaskProduct từ gian hàng
+                    availableProducts = shopGroup.taskProducts.map(tp => tp.taskProduct)
+                    console.log(`🏪 [START TASK] Found ${availableProducts.length} products in shop group: ${shopGroup.name}`)
+                } else {
+                    // KHÔNG fallback - chỉ lấy từ gian hàng
+                    console.log(`❌ [START TASK] No shop group found for VIP level ${userVipLevel.name} or no products in shop group`)
+                    console.log(`   - Shop group exists: ${shopGroup ? 'YES' : 'NO'}`)
+                    if (shopGroup) {
+                        console.log(`   - Products in shop group: ${shopGroup.taskProducts.length}`)
+                    }
+                    availableProducts = [] // Không có sản phẩm trong gian hàng
+                }
+            } else {
+                // Nếu user chưa có VIP level, không cho phép nhận đơn
+                console.log(`❌ [START TASK] User has no VIP level, cannot assign task`)
+                availableProducts = []
+            }
+        }
 
         console.log(`📦 [START TASK] Found ${availableProducts.length} available products`)
         if (availableProducts.length > 0) {
             console.log(`📦 [START TASK] Available products:`)
             availableProducts.forEach((p, idx) => {
-                console.log(`   ${idx + 1}. ${p.name} - VIP: ${p.vipLevelId || 'ALL'}, Stock: ${p.stock}, Price: $${p.basePrice}`)
+                const vipName = p.vipLevel?.name || p.vipLevelId || 'ALL'
+                console.log(`   ${idx + 1}. ${p.name} - VIP: ${vipName}, Stock: ${p.stock}, Price: $${p.basePrice}`)
             })
         } else {
-            console.log(`❌ [START TASK] No products match criteria:`)
-            console.log(`   - isActive: true`)
-            console.log(`   - stock > 0`)
-            console.log(`   - vipLevelId: null OR ${userVipLevel?.id || 'NONE'}`)
+            console.log(`❌ [START TASK] No products available`)
+            if (userVipLevel) {
+                console.log(`   - User VIP Level: ${userVipLevel.name}`)
+                console.log(`   - Looking in shop group for VIP level ${userVipLevel.name}`)
+            }
+            console.log(`   - Criteria: isActive: true, stock > 0`)
         }
 
         if (availableProducts.length === 0) {
             console.log('❌ [START TASK] No products available')
+            let message = ''
+            if (userVipLevel) {
+                // Kiểm tra xem có gian hàng không
+                const shopGroupCheck = await prisma.shopGroup.findFirst({
+                    where: {
+                        vipLevelId: userVipLevel.id,
+                        isActive: true
+                    }
+                })
+                if (!shopGroupCheck) {
+                    message = `Gian hàng ${userVipLevel.name} chưa được tạo. Vui lòng liên hệ admin.`
+                } else {
+                    message = `Không có sản phẩm khả dụng trong gian hàng ${userVipLevel.name}. Vui lòng liên hệ admin để thêm sản phẩm vào gian hàng.`
+                }
+            } else {
+                message = 'Bạn chưa có cấp VIP. Vui lòng nạp tiền để nâng cấp VIP level.'
+            }
             return NextResponse.json(
                 { 
                     success: false,
-                    message: 'Không có đơn hàng khả dụng. Vui lòng thử lại sau hoặc liên hệ admin.' 
+                    message
                 },
                 { status: 404 }
             )

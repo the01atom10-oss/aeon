@@ -14,13 +14,14 @@ export async function GET(req: NextRequest) {
             )
         }
 
-        // Get user balance
+        // Get user balance and completedOrders
         const user = await prisma.user.findUnique({
             where: { id: session.user.id },
-            select: { balance: true }
+            select: { balance: true, completedOrders: true }
         })
 
         const balance = user?.balance ? Number(user.balance) : 0
+        const completedOrders = user?.completedOrders || 0
 
         // Get VIP level based on balance
         const vipLevel = await prisma.vipLevel.findFirst({
@@ -36,11 +37,13 @@ export async function GET(req: NextRequest) {
             balance: balance,
             data: {
                 balance: balance.toString(),
+                completedOrders: completedOrders,
                 vipLevel: vipLevel
                     ? {
                         name: vipLevel.name,
                         minBalance: Number(vipLevel.minBalance).toString(),
                         commissionRate: Number(vipLevel.commissionRate).toString(),
+                        maxOrders: vipLevel.maxOrders,
                     }
                     : null,
             },

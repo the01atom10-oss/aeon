@@ -39,11 +39,23 @@ export default function AdminNotificationsPage() {
     })
 
     useEffect(() => {
+        if (status === 'loading') {
+            // Đang tải session, chờ
+            return
+        }
+        
         if (status === 'unauthenticated') {
             router.push('/login')
-        } else if (session?.user?.role !== 'ADMIN') {
+            return
+        }
+        
+        if (session?.user?.role !== 'ADMIN' && session?.user?.role !== 'OPERATOR') {
             router.push('/')
-        } else {
+            return
+        }
+        
+        // Chỉ fetch khi đã có session và là admin
+        if (session?.user) {
             fetchNotifications()
         }
     }, [status, session, router])
@@ -115,12 +127,17 @@ export default function AdminNotificationsPage() {
         }
     }
 
-    if (loading) {
+    if (status === 'loading' || loading) {
         return (
             <div className="min-h-screen bg-black flex items-center justify-center">
                 <div className="text-white text-xl">Đang tải...</div>
             </div>
         )
+    }
+    
+    // Kiểm tra lại permission trước khi render
+    if (status === 'unauthenticated' || (session?.user?.role !== 'ADMIN' && session?.user?.role !== 'OPERATOR')) {
+        return null // Sẽ redirect trong useEffect
     }
 
     return (

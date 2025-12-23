@@ -2,16 +2,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { canManageSystemSettings } from '@/lib/admin-permissions'
 
 // GET - Lấy tất cả settings
 export async function GET(req: NextRequest) {
     try {
         const session = await getServerSession(authOptions)
 
-        if (!session?.user || session.user.role !== 'ADMIN') {
+        // Chỉ admin cấp 1 mới có thể quản lý system settings
+        if (!session?.user || !canManageSystemSettings(session.user)) {
             return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 401 }
+                { 
+                    error: 'Unauthorized', 
+                    message: 'Chỉ admin cấp 1 mới có quyền quản lý cài đặt hệ thống' 
+                },
+                { status: 403 }
             )
         }
 
@@ -41,10 +46,14 @@ export async function POST(req: NextRequest) {
     try {
         const session = await getServerSession(authOptions)
 
-        if (!session?.user || session.user.role !== 'ADMIN') {
+        // Chỉ admin cấp 1 mới có thể quản lý system settings
+        if (!session?.user || !canManageSystemSettings(session.user)) {
             return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 401 }
+                { 
+                    error: 'Unauthorized', 
+                    message: 'Chỉ admin cấp 1 mới có quyền quản lý cài đặt hệ thống' 
+                },
+                { status: 403 }
             )
         }
 

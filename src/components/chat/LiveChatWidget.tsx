@@ -36,13 +36,23 @@ export default function LiveChatWidget() {
         }
     }, [isOpen])
 
-    // Auto-refresh messages every 3 seconds when chat is open
+    // Listen for open chat event
+    useEffect(() => {
+        const handleOpenChat = () => {
+            setIsOpen(true)
+        }
+
+        window.addEventListener('openChat', handleOpenChat)
+        return () => window.removeEventListener('openChat', handleOpenChat)
+    }, [])
+
+    // Auto-refresh messages every 1 second when chat is open for real-time experience
     useEffect(() => {
         if (!isOpen) return
-        
+
         const interval = setInterval(() => {
             loadMessages()
-        }, 3000)
+        }, 1000)
 
         return () => clearInterval(interval)
     }, [isOpen])
@@ -97,11 +107,10 @@ export default function LiveChatWidget() {
             {/* Chat Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`fixed bottom-24 right-4 sm:bottom-6 sm:right-6 z-50 w-14 h-14 sm:w-16 sm:h-16 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 ${
-                    isOpen 
-                        ? 'bg-gray-600 hover:bg-gray-700' 
+                className={`fixed bottom-24 right-4 sm:bottom-6 sm:right-6 z-50 w-14 h-14 sm:w-16 sm:h-16 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 ${isOpen
+                        ? 'bg-gray-600 hover:bg-gray-700'
                         : 'bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
-                }`}
+                    }`}
             >
                 {isOpen ? (
                     <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -163,11 +172,10 @@ export default function LiveChatWidget() {
                                     className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                                 >
                                     <div
-                                        className={`max-w-[75%] rounded-2xl px-4 py-2 ${
-                                            msg.sender === 'user'
+                                        className={`max-w-[75%] rounded-2xl px-4 py-2 ${msg.sender === 'user'
                                                 ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-br-sm'
                                                 : 'bg-white border border-gray-200 text-gray-800 rounded-bl-sm shadow-sm'
-                                        }`}
+                                            }`}
                                     >
                                         {msg.sender === 'admin' && (
                                             <p className="text-xs font-semibold mb-1 text-blue-600">
@@ -176,9 +184,8 @@ export default function LiveChatWidget() {
                                         )}
                                         <p className="text-sm break-words">{msg.message}</p>
                                         <p
-                                            className={`text-xs mt-1 ${
-                                                msg.sender === 'user' ? 'text-blue-100' : 'text-gray-400'
-                                            }`}
+                                            className={`text-xs mt-1 ${msg.sender === 'user' ? 'text-blue-100' : 'text-gray-400'
+                                                }`}
                                         >
                                             {new Date(msg.timestamp).toLocaleTimeString('vi-VN', {
                                                 hour: '2-digit',

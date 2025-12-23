@@ -81,21 +81,21 @@ export default async function ChatPage() {
                 <CardContent>
                     <div className="space-y-4">
                         <div>
-                            <h4 className="font-semibold text-gray-900 mb-1">Làm sao để nạp tiền?</h4>
-                            <p className="text-sm text-gray-600">
-                                Vào mục "Tài khoản" → "Nạp tiền" và làm theo hướng dẫn.
-                            </p>
-                        </div>
-                        <div>
-                            <h4 className="font-semibold text-gray-900 mb-1">Tôi có thể rút tiền như thế nào?</h4>
-                            <p className="text-sm text-gray-600">
-                                Vào mục "Tài khoản" → "Rút tiền", điền thông tin ngân hàng và số tiền muốn rút.
-                            </p>
-                        </div>
-                        <div>
                             <h4 className="font-semibold text-gray-900 mb-1">Làm thế nào để tăng cấp VIP?</h4>
                             <p className="text-sm text-gray-600">
                                 Hoàn thành nhiệm vụ để tích lũy số dư. Cấp VIP được tự động nâng cấp dựa trên số dư tài khoản.
+                            </p>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold text-gray-900 mb-1">Làm thế nào để nhận nhiệm vụ?</h4>
+                            <p className="text-sm text-gray-600">
+                                Vào mục "Nhiệm vụ" hoặc "Gian hàng", chọn gian hàng phù hợp với VIP level của bạn và bắt đầu giật đơn.
+                            </p>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold text-gray-900 mb-1">Vòng quay may mắn hoạt động thế nào?</h4>
+                            <p className="text-sm text-gray-600">
+                                Mỗi lần giật đơn thành công được thưởng 1 vòng quay. Sử dụng vòng quay để nhận giải thưởng may mắn!
                             </p>
                         </div>
                     </div>

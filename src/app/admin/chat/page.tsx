@@ -1,9 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { isAdminLevel1 } from '@/lib/admin-permissions'
 
 interface ChatMessage {
     id: string
@@ -18,15 +20,19 @@ interface ChatMessage {
 }
 
 export default function AdminChatPage() {
+    const { data: session } = useSession()
     const [messages, setMessages] = useState<ChatMessage[]>([])
     const [loading, setLoading] = useState(true)
     const [replyTo, setReplyTo] = useState<string | null>(null)
     const [replyMessage, setReplyMessage] = useState('')
     const [broadcastMessage, setBroadcastMessage] = useState('')
+    const [selectedMessages, setSelectedMessages] = useState<Set<string>>(new Set())
+    const [deleting, setDeleting] = useState(false)
 
     useEffect(() => {
         loadMessages()
-        const interval = setInterval(loadMessages, 5000)
+        // Refresh mỗi 1.5 giây để real-time hơn
+        const interval = setInterval(loadMessages, 1500)
         return () => clearInterval(interval)
     }, [])
 
@@ -40,7 +46,10 @@ export default function AdminChatPage() {
         } catch (error) {
             console.error('Failed to load messages:', error)
         } finally {
-            setLoading(false)
+            // Chỉ set loading false lần đầu
+            if (loading) {
+                setLoading(false)
+            }
         }
     }
 
@@ -60,6 +69,7 @@ export default function AdminChatPage() {
             if (response.ok) {
                 setReplyMessage('')
                 setReplyTo(null)
+                // Load ngay để hiển thị instant
                 await loadMessages()
             }
         } catch (error) {
@@ -82,10 +92,93 @@ export default function AdminChatPage() {
 
             if (response.ok) {
                 setBroadcastMessage('')
+                // Load ngay để hiển thị instant
                 await loadMessages()
             }
         } catch (error) {
             console.error('Failed to broadcast:', error)
+        }
+    }
+
+    const handleToggleSelect = (messageId: string) => {
+        const newSelected = new Set(selectedMessages)
+        if (newSelected.has(messageId)) {
+            newSelected.delete(messageId)
+        } else {
+            newSelected.add(messageId)
+        }
+        setSelectedMessages(newSelected)
+    }
+
+    const handleSelectAll = () => {
+        if (selectedMessages.size === messages.length) {
+            setSelectedMessages(new Set())
+        } else {
+            setSelectedMessages(new Set(messages.map(m => m.id)))
+        }
+    }
+
+    const handleDeleteSelected = async () => {
+        if (selectedMessages.size === 0) return
+        
+        if (!confirm(`Bạn có chắc chắn muốn xóa ${selectedMessages.size} tin nhắn đã chọn?`)) {
+            return
+        }
+
+        setDeleting(true)
+        try {
+            const response = await fetch('/api/admin/chat', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messageIds: Array.from(selectedMessages)
+                })
+            })
+
+            const data = await response.json()
+            if (response.ok) {
+                alert(`✅ ${data.message}`)
+                setSelectedMessages(new Set())
+                await loadMessages()
+            } else {
+                alert(`❌ Lỗi: ${data.message || data.error}`)
+            }
+        } catch (error) {
+            console.error('Failed to delete messages:', error)
+            alert('❌ Đã xảy ra lỗi khi xóa tin nhắn')
+        } finally {
+            setDeleting(false)
+        }
+    }
+
+    const handleDeleteAll = async () => {
+        if (!confirm('⚠️ BẠN CÓ CHẮC CHẮN MUỐN XÓA TẤT CẢ TIN NHẮN? Thao tác này không thể hoàn tác!')) {
+            return
+        }
+
+        setDeleting(true)
+        try {
+            const response = await fetch('/api/admin/chat', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    deleteAll: true
+                })
+            })
+
+            const data = await response.json()
+            if (response.ok) {
+                alert(`✅ ${data.message}`)
+                setSelectedMessages(new Set())
+                await loadMessages()
+            } else {
+                alert(`❌ Lỗi: ${data.message || data.error}`)
+            }
+        } catch (error) {
+            console.error('Failed to delete all messages:', error)
+            alert('❌ Đã xảy ra lỗi khi xóa tất cả tin nhắn')
+        } finally {
+            setDeleting(false)
         }
     }
 
@@ -110,11 +203,35 @@ export default function AdminChatPage() {
         )
     }
 
+    const canDelete = isAdminLevel1(session?.user)
+
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold text-gray-900">Quản lý Chat</h1>
-                <p className="text-gray-600 mt-1">Xem và trả lời tin nhắn từ người dùng</p>
+            <div className="flex justify-between items-center">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900">Quản lý Chat</h1>
+                    <p className="text-gray-600 mt-1">Xem và trả lời tin nhắn từ người dùng</p>
+                </div>
+                {canDelete && (
+                    <div className="flex gap-2">
+                        {selectedMessages.size > 0 && (
+                            <Button
+                                onClick={handleDeleteSelected}
+                                disabled={deleting}
+                                variant="danger"
+                            >
+                                {deleting ? 'Đang xóa...' : `🗑️ Xóa ${selectedMessages.size} tin đã chọn`}
+                            </Button>
+                        )}
+                        <Button
+                            onClick={handleDeleteAll}
+                            disabled={deleting || messages.length === 0}
+                            variant="danger"
+                        >
+                            {deleting ? 'Đang xóa...' : '🗑️ Xóa tất cả'}
+                        </Button>
+                    </div>
+                )}
             </div>
 
             {/* Broadcast Section */}
@@ -144,13 +261,34 @@ export default function AdminChatPage() {
                 </CardContent>
             </Card>
 
+            {/* Selection Controls */}
+            {canDelete && messages.length > 0 && (
+                <Card className="bg-gray-50">
+                    <CardContent className="py-3">
+                        <div className="flex items-center justify-between">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedMessages.size === messages.length && messages.length > 0}
+                                    onChange={handleSelectAll}
+                                    className="w-4 h-4"
+                                />
+                                <span className="text-sm text-gray-700">
+                                    Chọn tất cả ({selectedMessages.size}/{messages.length})
+                                </span>
+                            </label>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
             {/* Chat Conversations */}
             <div className="grid grid-cols-1 gap-4">
                 {Object.entries(groupedMessages).map(([userId, msgs]) => {
                     const userMessages = msgs.filter(m => !m.isAdmin)
                     const adminMessages = msgs.filter(m => m.isAdmin)
                     const lastUserMessage = userMessages[userMessages.length - 1]
-                    
+
                     if (userId === 'broadcast') {
                         return (
                             <Card key={userId} className="bg-blue-50 border-blue-200">
@@ -160,11 +298,21 @@ export default function AdminChatPage() {
                                 <CardContent>
                                     <div className="space-y-2">
                                         {msgs.map(msg => (
-                                            <div key={msg.id} className="bg-white rounded-lg p-3 shadow-sm">
-                                                <p className="text-sm">{msg.message}</p>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    {new Date(msg.createdAt).toLocaleString('vi-VN')}
-                                                </p>
+                                            <div key={msg.id} className="bg-white rounded-lg p-3 shadow-sm flex items-start gap-2">
+                                                {canDelete && (
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedMessages.has(msg.id)}
+                                                        onChange={() => handleToggleSelect(msg.id)}
+                                                        className="w-4 h-4 mt-1"
+                                                    />
+                                                )}
+                                                <div className="flex-1">
+                                                    <p className="text-sm">{msg.message}</p>
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        {new Date(msg.createdAt).toLocaleString('vi-VN')}
+                                                    </p>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -195,22 +343,36 @@ export default function AdminChatPage() {
                                     {msgs.map(msg => (
                                         <div
                                             key={msg.id}
-                                            className={`flex ${msg.isAdmin ? 'justify-end' : 'justify-start'}`}
+                                            className={`flex items-start gap-2 ${msg.isAdmin ? 'justify-end' : 'justify-start'}`}
                                         >
+                                            {canDelete && !msg.isAdmin && (
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedMessages.has(msg.id)}
+                                                    onChange={() => handleToggleSelect(msg.id)}
+                                                    className="w-4 h-4 mt-2"
+                                                />
+                                            )}
                                             <div
-                                                className={`max-w-[75%] rounded-lg px-4 py-2 ${
-                                                    msg.isAdmin
+                                                className={`max-w-[75%] rounded-lg px-4 py-2 ${msg.isAdmin
                                                         ? 'bg-blue-500 text-white'
                                                         : 'bg-gray-100 text-gray-800'
-                                                }`}
+                                                    }`}
                                             >
                                                 <p className="text-sm">{msg.message}</p>
-                                                <p className={`text-xs mt-1 ${
-                                                    msg.isAdmin ? 'text-blue-100' : 'text-gray-500'
-                                                }`}>
+                                                <p className={`text-xs mt-1 ${msg.isAdmin ? 'text-blue-100' : 'text-gray-500'
+                                                    }`}>
                                                     {new Date(msg.createdAt).toLocaleString('vi-VN')}
                                                 </p>
                                             </div>
+                                            {canDelete && msg.isAdmin && (
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedMessages.has(msg.id)}
+                                                    onChange={() => handleToggleSelect(msg.id)}
+                                                    className="w-4 h-4 mt-2"
+                                                />
+                                            )}
                                         </div>
                                     ))}
                                 </div>

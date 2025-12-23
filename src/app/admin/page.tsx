@@ -58,33 +58,6 @@ export default async function AdminDashboard() {
                         </div>
                     </Link>
 
-                    <Link href="/admin/deposits" className="group">
-                        <div className="bg-white/8 backdrop-blur-xl rounded-3xl p-6 border border-white/18 hover:bg-white/12 transition-all hover:scale-[1.02] shadow-xl">
-                            <div className="w-16 h-16 bg-green-500/20 rounded-2xl border border-green-400/30 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                </svg>
-                            </div>
-                            <h3 className="font-bold text-xl text-white mb-2">Quản lý Nạp tiền</h3>
-                            <p className="text-sm text-white/60">
-                                Duyệt yêu cầu nạp tiền (Credit)
-                            </p>
-                        </div>
-                    </Link>
-
-                    <Link href="/admin/withdrawals" className="group">
-                        <div className="bg-white/8 backdrop-blur-xl rounded-3xl p-6 border border-white/18 hover:bg-white/12 transition-all hover:scale-[1.02] shadow-xl">
-                            <div className="w-16 h-16 bg-red-500/20 rounded-2xl border border-red-400/30 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                                </svg>
-                            </div>
-                            <h3 className="font-bold text-xl text-white mb-2">Quản lý Rút tiền</h3>
-                            <p className="text-sm text-white/60">
-                                Duyệt yêu cầu rút tiền (Debit)
-                            </p>
-                        </div>
-                    </Link>
 
                     <Link href="/admin/audit-logs" className="group">
                         <div className="bg-white/8 backdrop-blur-xl rounded-3xl p-6 border border-white/18 hover:bg-white/12 transition-all hover:scale-[1.02] shadow-xl">
@@ -100,7 +73,7 @@ export default async function AdminDashboard() {
                         </div>
                     </Link>
 
-                    {/* <Link href="/admin/vip-levels" className="group">
+                    <Link href="/admin/vip-levels" className="group">
                         <div className="bg-white/8 backdrop-blur-xl rounded-3xl p-6 border border-white/18 hover:bg-white/12 transition-all hover:scale-[1.02] shadow-xl">
                             <div className="w-16 h-16 bg-yellow-500/20 rounded-2xl border border-yellow-400/30 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                 <svg className="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -109,10 +82,10 @@ export default async function AdminDashboard() {
                             </div>
                             <h3 className="font-bold text-xl text-white mb-2">VIP Levels</h3>
                             <p className="text-sm text-white/60">
-                                Quản lý cấp độ VIP và hoa hồng
+                                Điều chỉnh giới hạn Credit cho từng VIP level
                             </p>
                         </div>
-                    </Link> */}
+                    </Link>
 
                     <Link href="/admin/chat" className="group">
                         <div className="bg-white/8 backdrop-blur-xl rounded-3xl p-6 border border-white/18 hover:bg-white/12 transition-all hover:scale-[1.02] shadow-xl">
@@ -222,6 +195,20 @@ export default async function AdminDashboard() {
                             <h3 className="font-bold text-xl text-white mb-2">Vòng quay</h3>
                             <p className="text-sm text-white/60">
                                 Quản lý giải thưởng vòng quay
+                            </p>
+                        </div>
+                    </Link>
+
+                    <Link href="/admin/shop-groups" className="group">
+                        <div className="bg-white/8 backdrop-blur-xl rounded-3xl p-6 border border-white/18 hover:bg-white/12 transition-all hover:scale-[1.02] shadow-xl">
+                            <div className="w-16 h-16 bg-teal-500/20 rounded-2xl border border-teal-400/30 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                <svg className="w-8 h-8 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                </svg>
+                            </div>
+                            <h3 className="font-bold text-xl text-white mb-2">Gian hàng</h3>
+                            <p className="text-sm text-white/60">
+                                Quản lý nhóm gian hàng
                             </p>
                         </div>
                     </Link>

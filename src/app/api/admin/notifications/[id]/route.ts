@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { isAdmin, canDeleteData } from '@/lib/admin-permissions'
 
 // PUT - Cập nhật thông báo
 export async function PUT(
@@ -11,7 +12,7 @@ export async function PUT(
     try {
         const session = await getServerSession(authOptions)
         
-        if (!session || session.user.role !== 'ADMIN') {
+        if (!session || !isAdmin(session.user)) {
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 401 }
@@ -50,7 +51,7 @@ export async function PUT(
     }
 }
 
-// DELETE - Xóa thông báo
+// DELETE - Xóa thông báo (CHỈ admin cấp 1)
 export async function DELETE(
     req: NextRequest,
     { params }: { params: { id: string } }
@@ -58,10 +59,14 @@ export async function DELETE(
     try {
         const session = await getServerSession(authOptions)
         
-        if (!session || session.user.role !== 'ADMIN') {
+        // Chỉ admin cấp 1 mới được xóa notification
+        if (!session || !canDeleteData(session.user)) {
             return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 401 }
+                { 
+                    error: 'Unauthorized', 
+                    message: 'Chỉ admin cấp 1 mới có quyền xóa thông báo' 
+                },
+                { status: 403 }
             )
         }
 

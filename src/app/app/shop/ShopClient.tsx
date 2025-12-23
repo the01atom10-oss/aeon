@@ -4,39 +4,110 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { normalizeImageUrl } from '@/lib/image-utils'
 
-interface Product {
+interface TaskProduct {
     id: string
     name: string
     description: string | null
-    price: number
     imageUrl: string | null
+    basePrice: number
     stock: number
+    vipLevel: {
+        id: string
+        name: string
+    } | null
+}
+
+interface ShopGroupTaskProduct {
+    id: string
+    taskProductId: string
+    sortOrder: number
+    taskProduct: TaskProduct
+}
+
+interface ShopGroup {
+    id: string
+    name: string
+    description: string | null
+    vipLevel: {
+        id: string
+        name: string
+        commissionRate: number
+        maxOrders: number
+        autoApproveLimit: number
+    }
+    taskProducts: ShopGroupTaskProduct[]
+    _count: {
+        products: number
+        taskProducts: number
+    }
 }
 
 export default function ShopClient() {
     const { data: session } = useSession()
-    const [products, setProducts] = useState<Product[]>([])
+    const [shopGroups, setShopGroups] = useState<ShopGroup[]>([])
+    const [selectedShopGroup, setSelectedShopGroup] = useState<ShopGroup | null>(null)
+    const [taskProducts, setTaskProducts] = useState<TaskProduct[]>([])
     const [loading, setLoading] = useState(true)
     const [purchasing, setPurchasing] = useState<string | null>(null)
     const [balance, setBalance] = useState(0)
 
     useEffect(() => {
-        loadProducts()
+        loadShopGroups()
         loadBalance()
     }, [])
 
-    const loadProducts = async () => {
+    useEffect(() => {
+        if (selectedShopGroup) {
+            // Lấy TaskProduct từ shopGroup đã chọn
+            const products = selectedShopGroup.taskProducts.map(tp => tp.taskProduct)
+            setTaskProducts(products)
+            setLoading(false)
+        } else {
+            setTaskProducts([])
+            setLoading(false)
+        }
+    }, [selectedShopGroup])
+
+    const loadShopGroups = async () => {
         try {
-            const response = await fetch('/api/products')
+            const response = await fetch('/api/shop/groups')
             if (response.ok) {
                 const data = await response.json()
-                setProducts(data.products)
+                setShopGroups(data.data || [])
             }
         } catch (error) {
-            console.error('Failed to load products:', error)
+            console.error('Failed to load shop groups:', error)
         } finally {
             setLoading(false)
+        }
+    }
+
+    const handleSelectShopGroup = async (shopGroup: ShopGroup) => {
+        try {
+            // Gọi API chọn gian hàng
+            const response = await fetch('/api/shop/select-group', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    shopGroupId: shopGroup.id,
+                    shopGroupName: shopGroup.name 
+                })
+            })
+
+            if (response.ok) {
+                // Tự động mở chat widget
+                window.dispatchEvent(new CustomEvent('openChat'))
+                
+                // Set selected shop group
+                setSelectedShopGroup(shopGroup)
+            } else {
+                alert('Có lỗi xảy ra khi chọn gian hàng')
+            }
+        } catch (error) {
+            console.error('Failed to select shop group:', error)
+            alert('Có lỗi xảy ra')
         }
     }
 
@@ -52,43 +123,9 @@ export default function ShopClient() {
         }
     }
 
-    const handlePurchase = async (product: Product) => {
-        if (balance < product.price) {
-            alert('Không đủ Credits! Vui lòng nạp thêm.')
-            return
-        }
-
-        if (!confirm(`Mua ${product.name} với giá ${product.price.toLocaleString()} Credits?`)) {
-            return
-        }
-
-        setPurchasing(product.id)
-
-        try {
-            const response = await fetch('/api/products/purchase', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    productId: product.id,
-                    quantity: 1
-                })
-            })
-
-            const data = await response.json()
-
-            if (response.ok) {
-                alert(`✅ Mua thành công ${product.name}!`)
-                setBalance(data.newBalance)
-                await loadProducts()
-            } else {
-                alert(`❌ ${data.error || 'Có lỗi xảy ra'}`)
-            }
-        } catch (error) {
-            console.error('Failed to purchase:', error)
-            alert('❌ Có lỗi xảy ra')
-        } finally {
-            setPurchasing(null)
-        }
+    const handleViewProduct = (product: TaskProduct) => {
+        // Chuyển đến trang giật đơn với sản phẩm này
+        window.location.href = `/app/tasks?productId=${product.id}`
     }
 
     if (loading) {
@@ -114,16 +151,72 @@ export default function ShopClient() {
                 </div>
             </div>
 
-            {/* Products Grid */}
+            {/* Shop Groups Selection */}
+            {!selectedShopGroup && shopGroups.length > 0 && (
+                <div className="space-y-4">
+                    <h2 className="text-xl font-bold text-white">Chọn gian hàng</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {shopGroups.map((group) => (
+                            <Card 
+                                key={group.id} 
+                                className="cursor-pointer hover:shadow-xl transition-all hover:scale-[1.02] active:scale-100 bg-white/8 backdrop-blur-xl border border-white/18"
+                            >
+                                <CardContent className="p-6">
+                                    <div className="text-center">
+                                        <div className="text-4xl mb-3">
+                                            {group.name === 'ĐỒNG' ? '🥉' :
+                                             group.name === 'BẠC' ? '🥈' :
+                                             group.name === 'VÀNG' ? '🥇' :
+                                             group.name === 'BẠCH KIM' ? '💎' :
+                                             group.name === 'KIM CƯƠNG' ? '💠' :
+                                             group.name === 'PREMIUM VIP' ? '👑' : '🏪'}
+                                        </div>
+                                        <h3 className="text-xl font-bold mb-2 text-white">{group.name}</h3>
+                                        {group.description && (
+                                            <p className="text-sm text-white/70 mb-3">{group.description}</p>
+                                        )}
+                                        <div className="space-y-1 text-sm text-white/60">
+                                            <p>Hoa hồng: {(Number(group.vipLevel.commissionRate) * 100).toFixed(1)}%</p>
+                                            <p>Tối đa: {group.vipLevel.maxOrders} đơn</p>
+                                            <p>Sản phẩm giật đơn: {group._count.taskProducts || 0}</p>
+                                        </div>
+                                        <Button className="mt-4 w-full" onClick={() => handleSelectShopGroup(group)}>
+                                            Chọn gian hàng
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Back button if shop group selected */}
+            {selectedShopGroup && (
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => setSelectedShopGroup(null)}
+                        className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-white transition-all"
+                    >
+                        ← Quay lại chọn gian hàng
+                    </button>
+                </div>
+            )}
+
+            {/* Task Products Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-                {products.map(product => (
-                    <Card key={product.id} className="overflow-hidden hover:shadow-xl transition-all hover:scale-[1.02] active:scale-100">
+                {taskProducts.map(product => (
+                    <Card key={product.id} className="overflow-hidden hover:shadow-xl transition-all hover:scale-[1.02] active:scale-100 cursor-pointer" onClick={() => handleViewProduct(product)}>
                         <div className="relative">
                             {product.imageUrl ? (
                                 <img
-                                    src={product.imageUrl}
+                                    src={normalizeImageUrl(product.imageUrl)}
                                     alt={product.name}
                                     className="w-full h-40 sm:h-48 object-cover"
+                                    onError={(e) => {
+                                        e.currentTarget.src = '/placeholder-product.png'
+                                        e.currentTarget.onerror = null
+                                    }}
                                 />
                             ) : (
                                 <div className="w-full h-40 sm:h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
@@ -148,28 +241,31 @@ export default function ShopClient() {
                                     {product.description}
                                 </p>
                             )}
+                            {product.vipLevel && (
+                                <p className="text-xs text-purple-600 mb-2">VIP: {product.vipLevel.name}</p>
+                            )}
                             <div className="flex items-center justify-between mb-2 sm:mb-3">
                                 <span className="text-xl sm:text-2xl font-bold text-green-600">
-                                    {product.price.toLocaleString()}
+                                    {product.basePrice.toLocaleString('vi-VN')}
                                 </span>
-                                <span className="text-xs sm:text-sm text-gray-500">Credits</span>
+                                <span className="text-xs sm:text-sm text-gray-500">đ</span>
                             </div>
                             <Button
-                                onClick={() => handlePurchase(product)}
-                                disabled={product.stock === 0 || purchasing === product.id || balance < product.price}
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleViewProduct(product)
+                                }}
+                                disabled={product.stock === 0}
                                 className="w-full text-sm sm:text-base"
                             >
-                                {purchasing === product.id ? 'Đang mua...' :
-                                 product.stock === 0 ? 'Hết hàng' :
-                                 balance < product.price ? 'Không đủ Credits' :
-                                 '🛒 Mua ngay'}
+                                {product.stock === 0 ? 'Hết hàng' : '🎯 Giật đơn ngay'}
                             </Button>
                         </CardContent>
                     </Card>
                 ))}
             </div>
 
-            {products.length === 0 && (
+            {taskProducts.length === 0 && selectedShopGroup && (
                 <Card className="shadow-lg">
                     <CardContent className="py-12 sm:py-16 text-center text-gray-500">
                         <div className="text-5xl sm:text-6xl mb-3 sm:mb-4">🏪</div>

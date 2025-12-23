@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
-import { existsSync } from 'fs'
+import { uploadImageToSupabase } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
     try {
@@ -44,32 +42,51 @@ export async function POST(req: NextRequest) {
             )
         }
 
-        const bytes = await file.arrayBuffer()
-        const buffer = Buffer.from(bytes)
-
         // Generate unique filename
         const timestamp = Date.now()
         const randomString = Math.random().toString(36).substring(2, 8)
         const extension = file.name.split('.').pop()
         const filename = `${timestamp}-${randomString}.${extension}`
 
-        // Ensure upload directory exists
-        const uploadDir = join(process.cwd(), 'public', 'uploads', 'products')
-        if (!existsSync(uploadDir)) {
-            await mkdir(uploadDir, { recursive: true })
+        console.log('📝 [API] Bắt đầu upload ảnh...')
+        console.log('   Filename:', filename)
+        console.log('   File size:', file.size)
+        console.log('   File type:', file.type)
+
+        // Kiểm tra Supabase credentials
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        
+        if (!supabaseUrl || !supabaseKey) {
+            console.error('❌ [API] Supabase credentials chưa được cấu hình!')
+            console.error('   NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl || 'MISSING')
+            console.error('   NEXT_PUBLIC_SUPABASE_ANON_KEY:', supabaseKey ? 'SET' : 'MISSING')
+            return NextResponse.json(
+                { error: 'Supabase credentials chưa được cấu hình. Vui lòng thêm NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY vào .env' },
+                { status: 500 }
+            )
         }
 
-        // Save file
-        const filepath = join(uploadDir, filename)
-        await writeFile(filepath, buffer)
+        // Upload to Supabase Storage
+        const uploadResult = await uploadImageToSupabase(file, filename, 'products')
 
-        // Return public URL
-        const url = `/uploads/products/${filename}`
+        if (!uploadResult) {
+            console.error('❌ [API] Upload thất bại!')
+            return NextResponse.json(
+                { error: 'Failed to upload image to Supabase Storage. Kiểm tra console log để biết chi tiết.' },
+                { status: 500 }
+            )
+        }
+
+        console.log('✅ [API] Upload thành công!')
+        console.log('   URL:', uploadResult.url)
+        console.log('   Path:', uploadResult.path)
 
         return NextResponse.json({
             success: true,
-            url,
-            message: 'Image uploaded successfully'
+            url: uploadResult.url,
+            path: uploadResult.path,
+            message: 'Image uploaded successfully to Supabase Storage'
         })
 
     } catch (error) {

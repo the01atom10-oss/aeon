@@ -8,9 +8,11 @@ import ImageSlider from '@/components/ui/ImageSlider'
 
 interface UserData {
     balance: string
+    completedOrders?: number
     vipLevel: {
         name: string
         commissionRate: string
+        maxOrders?: number
     } | null
 }
 
@@ -139,7 +141,7 @@ export default function MissionPage() {
                     alert(startData.message || startData.error || 'Không thể bắt đầu nhiệm vụ')
                 }
             } else {
-                const errorMsg = tasksData.message || 'Không có nhiệm vụ phù hợp với cấp VIP của bạn. Vui lòng nạp thêm tiền để nâng cấp VIP level.'
+                const errorMsg = tasksData.message || 'Không có nhiệm vụ phù hợp với cấp VIP của bạn. Vui lòng hoàn thành nhiệm vụ để tích lũy số dư và nâng cấp VIP level.'
                 alert(errorMsg)
                 console.error('❌ No tasks available:', tasksData)
                 
@@ -377,7 +379,9 @@ export default function MissionPage() {
                     </div>
                     <div className="bg-gray-900/50 rounded-xl p-3 text-center">
                         <p className="text-xs text-gray-400 mb-1">Số đơn hoàn thành</p>
-                        <p className="text-lg font-bold text-blue-400">1/80</p>
+                        <p className="text-lg font-bold text-blue-400">
+                            {userData?.completedOrders ?? 0}/{userData?.vipLevel?.maxOrders ?? 0}
+                        </p>
                     </div>
                 </div>
                 <div className="space-y-2">

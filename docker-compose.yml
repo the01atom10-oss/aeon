@@ -7,10 +7,13 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: 9Carataloonline.
       POSTGRES_DB: carat9_reward
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+      LC_ALL: en_US.UTF-8
+      LANG: en_US.UTF-8
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - 9carat_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -27,14 +30,17 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/carat9_reward?schema=public
+      DATABASE_URL: postgresql://postgres:9Carataloonline.@db:5432/carat9_reward?schema=public
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-change-this-in-production}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      # Supabase Configuration
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-https://cwqlafntqzwiqydxgust.supabase.co}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-sb_publishable_s3V_MgquuQHdDtDrlHsdnQ_EcVUeH99}
     depends_on:
       db:
         condition: service_healthy
-    command: sh -c "sleep 5 && node server.js"
+    command: sh -c "sleep 5 && npm start"
 
 volumes:
-  postgres_data:
+  9carat_postgres_data:

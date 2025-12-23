@@ -6,8 +6,8 @@ const nextConfig = {
             bodySizeLimit: '2mb',
         },
     },
-    // Enable standalone output for Docker
-    output: 'standalone',
+    // Chạy bình thường, không dùng standalone mode
+    // output: 'standalone', // Đã tắt để chạy bình thường
     images: {
         remotePatterns: [
             {
@@ -17,6 +17,16 @@ const nextConfig = {
             {
                 protocol: 'http',
                 hostname: '**',
+            },
+            {
+                protocol: 'https',
+                hostname: '*.supabase.co',
+                pathname: '/storage/v1/object/public/**',
+            },
+            {
+                protocol: 'https',
+                hostname: 'cwqlafntqzwiqydxgust.supabase.co',
+                pathname: '/storage/v1/object/public/**',
             },
         ],
         unoptimized: true, // Disable optimization for local images

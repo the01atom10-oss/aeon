@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import Image from 'next/image'
+import { normalizeImageUrl } from '@/lib/image-utils'
 
 interface TaskRun {
     id: string
@@ -34,10 +35,60 @@ export default function AdminTaskRunsPage() {
     const [loading, setLoading] = useState(true)
     const [filter, setFilter] = useState<string>('ALL')
     const [processing, setProcessing] = useState<string | null>(null)
+    const [approvalSettings, setApprovalSettings] = useState({
+        autoApproveAll: false,
+        autoApproveThreshold: '' as string | number
+    })
+    const [savingApproval, setSavingApproval] = useState(false)
 
     useEffect(() => {
         loadTaskRuns()
+        loadApprovalSettings()
     }, [filter])
+
+    const loadApprovalSettings = async () => {
+        try {
+            const response = await fetch('/api/admin/settings/approval')
+            if (response.ok) {
+                const data = await response.json()
+                if (data.success) {
+                    setApprovalSettings({
+                        autoApproveAll: data.data.autoApproveAll || false,
+                        autoApproveThreshold: data.data.autoApproveThreshold || ''
+                    })
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load approval settings:', error)
+        }
+    }
+
+    const handleSaveApproval = async () => {
+        setSavingApproval(true)
+        try {
+            const response = await fetch('/api/admin/settings/approval', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    autoApproveAll: approvalSettings.autoApproveAll,
+                    autoApproveThreshold: approvalSettings.autoApproveThreshold ? parseFloat(String(approvalSettings.autoApproveThreshold)) : null
+                })
+            })
+
+            const data = await response.json()
+
+            if (response.ok) {
+                alert('✅ Cập nhật cài đặt duyệt đơn thành công!')
+            } else {
+                alert('❌ ' + (data.error || 'Có lỗi xảy ra'))
+            }
+        } catch (error) {
+            console.error('Failed to save approval settings:', error)
+            alert('❌ Có lỗi xảy ra')
+        } finally {
+            setSavingApproval(false)
+        }
+    }
 
     const loadTaskRuns = async () => {
         try {
@@ -131,6 +182,83 @@ export default function AdminTaskRunsPage() {
                 </div>
             </div>
 
+            {/* Cài đặt Duyệt đơn */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>⚙️ Cài đặt Duyệt đơn</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <p className="text-sm text-blue-800">
+                            <strong>Lưu ý:</strong> Cài đặt này áp dụng cho tất cả người dùng. 
+                            Đơn hàng có giá trị dưới hạn mức sẽ được tự động duyệt, bất kể số đơn đã hoàn thành.
+                        </p>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+                        <div className="flex-1">
+                            <label className="block text-sm font-medium mb-1">
+                                Tự động duyệt tất cả đơn (Giờ cao điểm)
+                            </label>
+                            <p className="text-xs text-gray-600">
+                                Bật chế độ này để tự động duyệt tất cả đơn, bất kể giá trị và số đơn đã hoàn thành
+                            </p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={approvalSettings.autoApproveAll}
+                                onChange={(e) => setApprovalSettings({ ...approvalSettings, autoApproveAll: e.target.checked })}
+                                className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium mb-2">
+                            Hạn mức tự động duyệt đơn (Giá trị)
+                        </label>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="number"
+                                value={approvalSettings.autoApproveThreshold}
+                                onChange={(e) => setApprovalSettings({ ...approvalSettings, autoApproveThreshold: e.target.value })}
+                                className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
+                                placeholder="Nhập mức giá (ví dụ: 100)"
+                                min="0"
+                                step="0.01"
+                                disabled={approvalSettings.autoApproveAll}
+                            />
+                            <span className="text-sm text-gray-600 whitespace-nowrap">Credits</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                            Đơn hàng có giá trị ≤ hạn mức này sẽ được tự động duyệt, bất kể số đơn đã hoàn thành.
+                            {approvalSettings.autoApproveAll && (
+                                <span className="text-orange-600 font-medium"> (Đã tắt vì đang bật chế độ tự động duyệt tất cả)</span>
+                            )}
+                        </p>
+                    </div>
+
+                    <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                        <p className="text-sm text-yellow-800">
+                            <strong>Ví dụ:</strong> Nếu đặt hạn mức là <strong>100 Credits</strong>, 
+                            tất cả đơn hàng có giá ≤ 100 Credits sẽ được tự động duyệt ngay lập tức.
+                        </p>
+                    </div>
+
+                    <div className="flex justify-end pt-2">
+                        <Button
+                            onClick={handleSaveApproval}
+                            disabled={savingApproval}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                            {savingApproval ? 'Đang lưu...' : '💾 Lưu cài đặt duyệt đơn'}
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+
             {/* Filter Tabs */}
             <div className="flex gap-2 overflow-x-auto pb-2">
                 {['ALL', 'ASSIGNED', 'COMPLETED', 'CANCELLED'].map((state) => (
@@ -171,11 +299,15 @@ export default function AdminTaskRunsPage() {
                                         {/* Product Image */}
                                         <div className="w-20 h-20 relative flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
                                             {run.taskProduct?.imageUrl ? (
-                                                <Image
-                                                    src={run.taskProduct.imageUrl}
+                                                <img
+                                                    src={normalizeImageUrl(run.taskProduct.imageUrl)}
                                                     alt={run.taskProduct.name}
-                                                    fill
-                                                    className="object-cover"
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        console.error('❌ Lỗi load ảnh:', run.taskProduct?.imageUrl, 'URL:', e.currentTarget.src)
+                                                        e.currentTarget.src = '/placeholder-product.png'
+                                                        e.currentTarget.onerror = null
+                                                    }}
                                                 />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-3xl">

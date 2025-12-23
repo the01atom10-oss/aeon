@@ -127,18 +127,6 @@ export default async function SupportPage() {
                 <h3 className="text-xl font-bold mb-4">❓ Câu hỏi thường gặp</h3>
                 <div className="space-y-4">
                     <div>
-                        <h4 className="font-semibold text-green-400 mb-1">Làm sao để nạp tiền?</h4>
-                        <p className="text-sm text-gray-400">
-                            Vào mục "Tài khoản" → "Nạp tiền" và làm theo hướng dẫn.
-                        </p>
-                    </div>
-                    <div>
-                        <h4 className="font-semibold text-green-400 mb-1">Tôi có thể rút tiền như thế nào?</h4>
-                        <p className="text-sm text-gray-400">
-                            Vào mục "Tài khoản" → "Rút tiền", điền thông tin ngân hàng và số tiền muốn rút.
-                        </p>
-                    </div>
-                    <div>
                         <h4 className="font-semibold text-green-400 mb-1">Vòng quay may mắn hoạt động thế nào?</h4>
                         <p className="text-sm text-gray-400">
                            Mỗi lần giật đơn thành công được thưởng 1 vòng quay
@@ -147,7 +135,13 @@ export default async function SupportPage() {
                     <div>
                         <h4 className="font-semibold text-green-400 mb-1">Làm thế nào để tăng cấp VIP?</h4>
                         <p className="text-sm text-gray-400">
-                            Tích lũy số dư trong tài khoản. Cấp VIP tự động nâng cấp khi đủ điều kiện.
+                            Tích lũy số dư trong tài khoản bằng cách hoàn thành nhiệm vụ. Cấp VIP tự động nâng cấp khi đủ điều kiện.
+                        </p>
+                    </div>
+                    <div>
+                        <h4 className="font-semibold text-green-400 mb-1">Làm thế nào để nhận nhiệm vụ?</h4>
+                        <p className="text-sm text-gray-400">
+                            Vào mục "Nhiệm vụ" hoặc "Gian hàng", chọn gian hàng phù hợp với VIP level của bạn và bắt đầu giật đơn.
                         </p>
                     </div>
                 </div>

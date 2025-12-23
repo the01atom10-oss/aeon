@@ -180,9 +180,10 @@ export default function UserDetailPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    amount: parseFloat(balanceForm.amount),
-                    type: balanceForm.type,
+                    amount: Math.abs(parseFloat(balanceForm.amount)), // Always send positive number
+                    type: balanceForm.type, // Send type: 'CREDIT' or 'DEBIT'
                     description: balanceForm.description,
+                    note: balanceForm.description, // Also send as note for backward compatibility
                 }),
             })
 
