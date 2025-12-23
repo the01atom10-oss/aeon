@@ -206,7 +206,8 @@ export default function ShopClient() {
             {/* Task Products Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
                 {taskProducts.map(product => (
-                    <Card key={product.id} className="overflow-hidden hover:shadow-xl transition-all hover:scale-[1.02] active:scale-100 cursor-pointer" onClick={() => handleViewProduct(product)}>
+                    <div key={product.id} onClick={() => handleViewProduct(product)} className="cursor-pointer">
+                        <Card className="overflow-hidden hover:shadow-xl transition-all hover:scale-[1.02] active:scale-100">
                         <div className="relative">
                             {product.imageUrl ? (
                                 <img
@@ -261,7 +262,8 @@ export default function ShopClient() {
                                 {product.stock === 0 ? 'Hết hàng' : '🎯 Giật đơn ngay'}
                             </Button>
                         </CardContent>
-                    </Card>
+                        </Card>
+                    </div>
                 ))}
             </div>
 

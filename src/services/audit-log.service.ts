@@ -31,7 +31,7 @@ export class AuditLogService {
                         ? input.afterBalance 
                         : null,
                     note: input.note || null,
-                    metadata: input.metadata || null,
+                    metadata: input.metadata || undefined,
                 },
             })
 
@@ -115,7 +115,7 @@ export class AuditLogService {
             beforeBalance: null,
             afterBalance: null,
             note: note || null,
-            metadata: metadata || null,
+            metadata: metadata || undefined,
         })
     }
 }

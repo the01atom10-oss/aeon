@@ -62,7 +62,7 @@ export async function uploadImageToSupabase(
         if (error) {
             console.error('❌ Supabase upload error:', error)
             console.error('   Error message:', error.message)
-            console.error('   Error status:', error.statusCode)
+            // StorageError không có statusCode, chỉ có message
             return null
         }
 
